@@ -7,3 +7,8 @@ HTML::FillInForm can be used to redisplay the HTML form with all the form elemen
 submitted info.
 
 Please note that this module requires HTML::Parser 3.08 or greater.
+
+Copyright (c) 2000, 2001 Thomas J. Mather, tjmather@tjmather.com 
+
+All rights reserved. This package is free software; you can redistribute
+it and/or modify it under the same terms as Perl itself. 

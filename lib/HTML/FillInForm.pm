@@ -11,7 +11,7 @@ use HTML::Parser 3.08;
 require 5.005;
 
 use vars qw($VERSION @ISA);
-$VERSION = '0.21';
+$VERSION = '0.22';
 @ISA = qw(HTML::Parser);
 
 sub new {
@@ -105,10 +105,10 @@ sub start {
       # check for input type, noting that default type is text
       if (!exists $attr->{'type'} ||
 	  $attr->{'type'} =~ /^(text|textfield|hidden|password|)$/i){
-	$value = $value->[0] if ref($value) eq 'ARRAY';
+	$value = (shift @$value || '') if ref($value) eq 'ARRAY';
 	$attr->{'value'} = $value;
       } elsif (lc $attr->{'type'} eq 'radio'){
-	$value = $value->[0] if ref($value) eq 'ARRAY';
+	$value = (shift @$value || '') if ref($value) eq 'ARRAY';
 	# value for radio boxes default to 'on', works with netscape
 	$attr->{'value'} = 'on' unless exists $attr->{'value'};
 	if ($attr->{'value'} eq $value){
@@ -184,7 +184,7 @@ sub start {
     }
   } elsif ($tagname eq 'textarea'){
     if (defined(my $value = $self->{fdat}->{$attr->{'name'}})){
-      $value = $value->[0] if ref($value) eq 'ARRAY';
+      $value = (shift @$value || '') if ref($value) eq 'ARRAY';
       # <textarea> foobar </textarea> -> <textarea> $value </textarea>
       # we need to set outputText to 'no' so that 'foobar' won't be printed
       $self->{outputText} = 'no';
@@ -356,7 +356,7 @@ HTML::FillInForm is now integrated with Apache::ASP.  To activate, use
 
 =head1 VERSION
 
-This documentation describes HTML::FillInForm module version 0.21.
+This documentation describes HTML::FillInForm module version 0.22.
 
 =head1 SECURITY
 
