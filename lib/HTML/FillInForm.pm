@@ -12,7 +12,7 @@ use HTML::Parser 3.26;
 require 5.005;
 
 use vars qw($VERSION @ISA);
-$VERSION = '1.02';
+$VERSION = '1.03';
 
 @ISA = qw(HTML::Parser);
 
@@ -203,7 +203,7 @@ sub start {
       $self->{output} .= ">";
     }
   } elsif ($tagname eq 'textarea'){
-    if (defined(my $value = $self->{fdat}->{$attr->{'name'}})){
+    if ($attr->{'name'} and defined (my $value = $self->{fdat}->{$attr->{'name'}})){
       $value = $self->escapeHTMLStringOrList($value);
       $value = (shift @$value || '') if ref($value) eq 'ARRAY';
       # <textarea> foobar </textarea> -> <textarea> $value </textarea>
@@ -421,7 +421,7 @@ L<http://www.masonhq.com/docs/faq/#how_can_i_integrate_html_fillin>
 
 =head1 VERSION
 
-This documentation describes HTML::FillInForm module version 1.02.
+This documentation describes HTML::FillInForm module version 1.03.
 
 =head1 SECURITY
 

@@ -1,3 +1,8 @@
+1.03 - October 15th 2003
+
+Fixed warning messages when textarea doesn't have a name attribute
+(Rob Brown)
+
 1.02 - June 10th 2003
 
 Updated required version number for HTML::Parser to 3.26 in Makefile.PL
@@ -6,7 +11,7 @@ Updated required version number for HTML::Parser to 3.26 in Makefile.PL
 1.01 - December 31st 2002
 
 Fixed issue with HTML::Parser decoding high-bit entities, by setting
-attr_encoded option, now requires HTML::Parser > 3.26.  (Jonathan Swartz)
+attr_encoded option, now requires HTML::Parser >= 3.26.  (Jonathan Swartz)
 
 1.00 - August 28th 2002
 
