@@ -11,7 +11,7 @@ use HTML::Parser 3;
 require 5.005;
 
 use vars qw($VERSION @ISA);
-$VERSION = '0.02';
+$VERSION = '0.03';
 @ISA = qw(HTML::Parser);
 
 sub new {
@@ -58,7 +58,6 @@ sub fill {
     $self->parse_file($file);
   } elsif (my $scalarref = $option{scalarref}){
     $self->parse($$scalarref);
-#    return $$scalarref;
   } elsif (my $arrayref = $option{arrayref}){
     for (@$arrayref){
       $self->parse($_);
@@ -72,10 +71,13 @@ sub start {
   my ($self, $tag, $attr, $attrseq, $origtext) = @_;
   if ($tag =~ m/^(input|option)$/){
     if ($tag eq 'input'){
-      if (my $value = $self->{fdat}->{$attr->{'name'}}){
-	if ($attr->{'type'} =~ /^(text|textfield|hidden|password)$/){
+      my $value = $self->{fdat}->{$attr->{'name'}};
+      # force hidden fields to have a value
+      $value ||= '' if $attr->{'type'} eq 'hidden';
+      if (defined($value)){
+        if ($attr->{'type'} =~ /^(text|textfield|hidden|password)$/i){
 	  $attr->{'value'} = $self->escapeHTML($value);
-	} elsif ($attr->{'type'} eq 'radio'){
+	} elsif ($attr->{'type'} =~ /^(radio|checkbox)$/i){
 	  if ($attr->{'value'} eq $value){
 	    $attr->{'checked'} = '__BOOLEAN__';
 	  } else {
@@ -91,12 +93,12 @@ sub start {
       }
     }
     $self->{output} .= "<$tag";
-    foreach my $key (keys %$attr) {
-      if($attr->{$key} eq '__BOOLEAN__'){
+    while (my ($key, $value) = each %$attr) {
+      if($value eq '__BOOLEAN__'){
 	# boolean attribute
 	$self->{output} .= " $key";
       } else {
-	$self->{output} .= " $key" . qq(="$attr->{$key}");
+	$self->{output} .= " $key" . qq(="$value");
       }
     }
     $self->{output} .= ">";
@@ -121,7 +123,7 @@ sub start {
 sub text {
   my ($self, $origtext) = @_;
   # just output text, unless replaced value of <textarea> tag
-  unless($self->{outputText} eq 'no'){
+  unless(exists $self->{outputText} && $self->{outputText} eq 'no'){
     $self->{output} .= $origtext;
   }
 }
@@ -191,7 +193,7 @@ HTML::FillInForm - Populates HTML Forms with CGI data.
 This module automatically inserts data from a previous HTML form into the HTML input, textarea and select tags.
 It is a subclass of L<HTML::Parser> and uses it to parse the HTML and insert the values into the form tags.
 
-One useful application is after a user submits an HTML form without filling out
+One useful application is after a user submits an HTML form without filling out a
 required field.  HTML::FillInForm can be used to redisplay the HTML form
 with all the form elements containing the submitted info.
 
@@ -253,7 +255,7 @@ L<HTML::Parser>
 
 =head1 VERSION
 
-This documenation describes HTML::FillInForm module version 0.02.
+This documenation describes HTML::FillInForm module version 0.03.
 
 =head1 BUGS
 
@@ -270,7 +272,15 @@ insert CGI data into forms, but require that you mix HTML with Perl.
 
 =head1 AUTHOR
 
-(c) 2000 Thomas J. Mather, tjmather@alumni.princeton.com
+(c) 2000 Thomas J. Mather, tjmather@alumni.princeton.edu
 
 All rights reserved. This package is free software; you can
 redistribute it and/or modify it under the same terms as Perl itself.
+
+=head1 CREDITS
+
+Fixes, Bug Reports have been generously provided by:
+
+  Tom Lancaster
+
+Thanks!

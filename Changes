@@ -1,0 +1,18 @@
+0.03 - August 10th 2000
+
+FillInForm now forces hidden fields to have a value.  So <input type="hidden" name="foo">
+is transformed to <input type="hidden" name="foo" value=""> if no value is set for 'foo'.
+
+Fixed bug with case-sensitivity and missing checkbox.  Thanks to
+Tom Lancaster for this bug report and fix!
+
+Added some test scripts.
+
+0.02 - June 27th 2000
+
+Fixed bug with option tags.  Now displays all 'option' tag attributes, in addition to selected and value.
+Better support for boolean attributes.
+
+0.01 - June 18th 2000
+
+Initial Release of Module.

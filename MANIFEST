@@ -1,2 +1,5 @@
+Changes
 Makefile.PL
+MANIFEST
 FillInForm.pm
+test.pl
