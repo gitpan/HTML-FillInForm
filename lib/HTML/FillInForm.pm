@@ -11,7 +11,7 @@ use HTML::Parser 3.08;
 require 5.005;
 
 use vars qw($VERSION @ISA);
-$VERSION = '0.10';
+$VERSION = '0.12';
 @ISA = qw(HTML::Parser);
 
 sub new {
@@ -30,19 +30,24 @@ sub fill_scalarref { my $self = shift; return $self->fill('scalarref',@_); }
 sub fill {
   my ($self, %option) = @_;
 
-  if(my $object = $option{fobject}){
-      # make sure objects in 'param_object' parameter support param()
-    defined($object->can('param')) or
-      croak("HTML::FillInForm->fill called with fobject option, containing object of type " . ref($object) . " which lacks a param() method!");
-    $self->{fdat} = {};
-    foreach my $k ($object->param()){
-      # we expect param to return an array if there are multiple values
-      my @v = $object->param($k);
-      $self->{fdat}->{$k} = scalar(@v)>1 ? \@v : $v[0];
-    }
-  }
   if (my $fdat = $option{fdat}){
     $self->{fdat} = $fdat;
+  }
+  if(my $objects = $option{fobject}){
+    unless(ref($objects) eq 'ARRAY'){
+      $objects = [ $objects ];
+    }
+    $self->{fdat} = {} unless exists $self->{fdat};
+    for my $object (@$objects){
+      # make sure objects in 'param_object' parameter support param()
+      defined($object->can('param')) or
+	croak("HTML::FillInForm->fill called with fobject option, containing object of type " . ref($object) . " which lacks a param() method!");
+      foreach my $k ($object->param()){
+	# we expect param to return an array if there are multiple values
+	my @v = $object->param($k);
+	$self->{fdat}->{$k} = scalar(@v)>1 ? \@v : $v[0];
+      }
+    }
   }
 
 #  # get data set from param() method
@@ -64,7 +69,7 @@ sub fill {
       $self->parse($_);
     }
   }
-  return $self->{output};
+  return delete $self->{output};
 }
 
 # handles opening HTML tags such as <input ...>
@@ -298,6 +303,11 @@ C<$q> is required to have a C<param()> method that works like
 CGI's C<param()>.
 
   $output = $fif->fill(scalarref => \$html,
+             fobject => [$q1, $q2]);
+
+Note that you can pass multiple objects as an array reference.
+
+  $output = $fif->fill(scalarref => \$html,
              fdat => \%fdat);
 
 Returns filled in HTML form contained in C<$html> with data from C<%fdat>.
@@ -319,8 +329,10 @@ and
 
 =head2 Apache::PageKit
 
-To use HTML::FillInForm in L<Apache::PageKit> is easy.  It is
+To use HTML::FillInForm in L<Apache::PageKit> is easy.  By default it is
 automatically called for any page that includes a <form> tag.
+It can be turned on or off by using the C<fill_in_form> configuration
+option.
 
 =head2 Apache::ASP v2.09 and above
 
@@ -329,50 +341,17 @@ HTML::FillInForm is now integrated with Apache::ASP.  To activate, use
   PerlSetVar FormFill 1
   $Response->{FormFill} = 1
 
-=head2 Apache::ASP v2.08 and below
-
-To use HTML::FillInForm, put the following in global.asa
-
-  sub fillin {
-    my $args = shift;
-    my $html = shift;
-    my $fif = new HTML::FillInForm;
-    my $output = $fif->fill(
-                           scalarref => \$html,
-                           fdat      => $Apps::Param,
-                           );
-    $Response->Write($output);
-  }
-
-Note $Apps::Param is set to either the querystring or form data.
-Replace with $Request->QueryString or $Request->Form if you wish.
-
-Then put something like this in your apache configuration:
-
-  XMLSubsMatch fillin
-
-Finally, surround your forms like this:
-
-  <fillin>
-    <form>
-      <input name="myfield">
-    </form>
-  </fillin>
-
-See http://forum.swarthmore.edu/epigone/modperl/malskalko for more details.
-
 =head1 SEE ALSO
 
 L<HTML::Parser>
 
 =head1 VERSION
 
-This documentation describes HTML::FillInForm module version 0.10.
+This documentation describes HTML::FillInForm module version 0.12.
 
 =head1 BUGS
 
-This module has not been tested extensively.  Please submit
-any bug reports to tjmather@anidea.com.
+Please submit any bug reports to tjmather@anidea.com.
 
 =head1 NOTES
 
@@ -385,7 +364,7 @@ insert CGI data into forms, but require that you mix HTML with Perl.
 
 =head1 AUTHOR
 
-(c) 2000 Thomas J. Mather, tjmather@alumni.princeton.edu
+(c) 2000, 2001 Thomas J. Mather, tjmather@tjmather.com
 
 All rights reserved. This package is free software; you can
 redistribute it and/or modify it under the same terms as Perl itself.
