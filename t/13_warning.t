@@ -2,7 +2,7 @@
 
 # emits warnings for HTML::FIF <= 0.22
 
-use CGI; 
+use CGI qw(:no_debug);
 use HTML::FillInForm;
 use Test;
 

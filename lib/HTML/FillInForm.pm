@@ -11,7 +11,7 @@ use HTML::Parser 3.08;
 require 5.005;
 
 use vars qw($VERSION @ISA);
-$VERSION = '0.23';
+$VERSION = '0.24';
 @ISA = qw(HTML::Parser);
 
 sub new {
@@ -356,7 +356,7 @@ HTML::FillInForm is now integrated with Apache::ASP.  To activate, use
 
 =head1 VERSION
 
-This documentation describes HTML::FillInForm module version 0.22.
+This documentation describes HTML::FillInForm module version 0.24.
 
 =head1 SECURITY
 
