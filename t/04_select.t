@@ -43,7 +43,7 @@ my $output = $fif->fill(scalarref => \$hidden_form_in,
 my $is_selected = join(" ",map { m/selected/ ? "yes" : "no" } grep /option/, split ("\n",$output));
 
 if ($is_selected eq "yes no no yes yes no no no no no yes no"){
-       print "ok 2\n";
+       print "ok 2\n$output\n";
 } else {
        print "Got unexpected is_seleced for select menus:\n$is_selected\n$output\n";
        print "not ok 2\n";
@@ -84,7 +84,7 @@ $is_selected = join(" ",map { m/selected/ ? "yes" : "no" } grep /option/, split 
 if ($is_selected eq "yes no no yes yes no no no no no yes no"){
        print "ok 3\n";
 } else {
-       print "Got unexpected is_seleced for select menus:\n$is_selected\n$output\n";
+       print "Got unexpected is_selected for select menus:\n$is_selected\n$output\n";
        print "not ok 3\n";
 }
 
@@ -105,7 +105,7 @@ $hidden_form_in = qq{<select name="foo1"><option><option value="bar1"></select>}
 $fif = new HTML::FillInForm;
 $output = $fif->fill(scalarref => \$hidden_form_in,
                        fobject => $q);
-if ($output =~ m!^<select name="foo1"><option><option( selected| value="bar1"){2}></select>$!){
+if ($output =~ m!^<select name="foo1"><option><option( selected="selected"| value="bar1"){2}></select>$!){
        print "ok 5\n";
 } else {
        print "Got unexpected output for empty option:\n$output\n";

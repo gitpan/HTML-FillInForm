@@ -1,3 +1,20 @@
+1.10 - March 8th, 2004
+
+Now queries passed objects for form fields as it encounters them instead of
+asking for all fields up front.  This allows the type of object passed
+to not have to return all the fields in a empty ->param() call.
+(Dave Rolsky)
+
+Generate XHTML-compliant tags (Dave Rolsky)
+
+Documented behavior when passing undef values.
+
+Fixed bug when HTML form has two or more radio buttons and second or
+higher radio button is selected.  (Dan Kubb)
+
+Made ignore_fields work with fdat, included new test script
+18_ignore_fdat.t (James Tolley)
+
 1.03 - October 15th 2003
 
 Fixed warning messages when textarea doesn't have a name attribute

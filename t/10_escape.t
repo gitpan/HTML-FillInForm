@@ -41,3 +41,4 @@ unless ($strings_output eq $strings_html){
 	print "not ";
 }
 print "ok 1";
+

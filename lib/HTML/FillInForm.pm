@@ -12,7 +12,7 @@ use HTML::Parser 3.26;
 require 5.005;
 
 use vars qw($VERSION @ISA);
-$VERSION = '1.03';
+$VERSION = '1.04';
 
 @ISA = qw(HTML::Parser);
 
@@ -22,7 +22,6 @@ sub new {
   $self->init;
   # tell HTML::Parser not to decode attributes
   $self->attr_encoded(1);
-  $self->boolean_attribute_value('__BOOLEAN__');
   return $self;
 }
 
@@ -37,31 +36,32 @@ sub fill {
   my %ignore_fields;
   %ignore_fields = map { $_ => 1 } ( ref $option{'ignore_fields'} eq 'ARRAY' )
     ? @{ $option{ignore_fields} } : $option{ignore_fields} if exists( $option{ignore_fields} );
-  
+  $self->{ignore_fields} = \%ignore_fields;
+
   if (my $fdat = $option{fdat}){
     # Copy the structure to prevent side-effects.
     my %copy;
     while(my($key, $val) = each %$fdat) {
+      next if exists $ignore_fields{$key};
       $copy{ $key } = ref $val eq 'ARRAY' ? [ @$val ] : $val;
     }
     $self->{fdat} = \%copy;
   }
+
+  # We want the reference to these objects to go out of scope at the
+  # end of the method.
+  local $self->{objects} = [];
   if(my $objects = $option{fobject}){
     unless(ref($objects) eq 'ARRAY'){
       $objects = [ $objects ];
     }
-    $self->{fdat} = {} unless exists $self->{fdat};
     for my $object (@$objects){
       # make sure objects in 'param_object' parameter support param()
       defined($object->can('param')) or
 	croak("HTML::FillInForm->fill called with fobject option, containing object of type " . ref($object) . " which lacks a param() method!");
-      foreach my $k ($object->param()){
-        next if exists $ignore_fields{$k};
-	# we expect param to return an array if there are multiple values
-	my @v = $object->param($k);
-	$self->{fdat}->{$k} = scalar(@v)>1 ? \@v : $v[0];
-     }
     }
+
+    $self->{objects} = $objects;
   }
   if (my $target = $option{target}){
     $self->{'target'} = $target;
@@ -74,9 +74,11 @@ sub fill {
   }
 
   # make sure method has data to fill in HTML form with!
-  unless(exists $self->{fdat}){
+  unless(exists $self->{fdat} || $self->{objects}){
     croak("HTML::FillInForm->fillInForm() called without 'fobject' or 'fdat' parameter set");
   }
+
+  local $self->{object_param_cache};
 
   if(my $file = $option{file}){
     $self->parse_file($file);
@@ -96,6 +98,7 @@ sub start {
 
   # set the current form
   if ($tagname eq 'form') {
+    $self->{object_param_cache} = {};
     if (exists $attr->{'name'}) {
       $self->{'current_form'} = $attr->{'name'};
     } else {
@@ -118,7 +121,7 @@ sub start {
     delete $self->{option_no_value};
   }
   if ($tagname eq 'input'){
-    my $value = exists $attr->{'name'} ? $self->{fdat}->{$attr->{'name'}} : undef;
+    my $value = exists $attr->{'name'} ? $self->_get_param($attr->{'name'}) : undef;
     # force hidden fields to have a value
     $value = '' if exists($attr->{'type'}) && $attr->{'type'} eq 'hidden' && ! exists $attr->{'value'} && ! defined $value;
     if (defined($value)){
@@ -132,11 +135,11 @@ sub start {
 	$value = (shift @$value || '') if ref($value) eq 'ARRAY';
 	$attr->{'value'} = $value;
       } elsif (lc $attr->{'type'} eq 'radio'){
-	$value = (shift @$value || '') if ref($value) eq 'ARRAY';
+	$value = ($value->[0] || '') if ref($value) eq 'ARRAY';
 	# value for radio boxes default to 'on', works with netscape
 	$attr->{'value'} = 'on' unless exists $attr->{'value'};
 	if ($attr->{'value'} eq $value){
-	  $attr->{'checked'} = '__BOOLEAN__';
+	  $attr->{'checked'} = 'checked';
 	} else {
 	  delete $attr->{'checked'};
 	}
@@ -148,7 +151,7 @@ sub start {
         $value = [ $value ] unless ref($value) eq 'ARRAY';
 	foreach my $v ( @$value ) {
 	  if ( $attr->{'value'} eq $v ) {
-	    $attr->{'checked'} = '__BOOLEAN__';
+	    $attr->{'checked'} = 'checked';
 	  }
 	}
 #      } else {
@@ -157,19 +160,15 @@ sub start {
     }
     $self->{output} .= "<$tagname";
     while (my ($key, $value) = each %$attr) {
-      if($value eq '__BOOLEAN__'){
-        next if $key eq '/';
-	# boolean attribute
-	$self->{output} .= " $key";
-      } else {
-	$self->{output} .= sprintf qq( %s="%s"), $key, $value;
-      }
+      next if $key eq '/';
+      $self->{output} .= sprintf qq( %s="%s"), $key, $value;
     }
     # extra space put here to work around Opera 6.01/6.02 bug
     $self->{output} .= ' /' if $attr->{'/'};
     $self->{output} .= ">";
   } elsif ($tagname eq 'option'){
-    my $value = $self->{fdat}->{$self->{selectName}};
+    my $value = $self->_get_param($self->{selectName});
+
     if (defined($value)){
       $value = $self->escapeHTMLStringOrList($value);
       $value = [ $value ] unless ( ref($value) eq 'ARRAY' );
@@ -179,7 +178,7 @@ sub start {
         # option tag has value attr - <OPTION VALUE="foo">bar</OPTION>
 	foreach my $v ( @$value ) {
 	  if ( $attr->{'value'} eq $v ) {
-	    $attr->{selected} = '__BOOLEAN__';
+	    $attr->{selected} = 'selected';
 	  }
         }
       } else {
@@ -190,20 +189,14 @@ sub start {
     }
     $self->{output} .= "<$tagname";
     while (my ($key, $value) = each %$attr) {
-      if($value eq '__BOOLEAN__'){
-        next if $key eq '/';
-	# boolean attribute
-	$self->{output} .= " $key";
-      } else {
-	$self->{output} .= sprintf qq( %s="%s"), $key, $value;
-      }
+      $self->{output} .= sprintf qq( %s="%s"), $key, $value;
     }
     unless ($self->{option_no_value}){
       # we can close option tag here
       $self->{output} .= ">";
     }
   } elsif ($tagname eq 'textarea'){
-    if ($attr->{'name'} and defined (my $value = $self->{fdat}->{$attr->{'name'}})){
+    if ($attr->{'name'} and defined (my $value = $self->_get_param($attr->{'name'}))){
       $value = $self->escapeHTMLStringOrList($value);
       $value = (shift @$value || '') if ref($value) eq 'ARRAY';
       # <textarea> foobar </textarea> -> <textarea> $value </textarea>
@@ -221,6 +214,28 @@ sub start {
   }
 }
 
+sub _get_param {
+  my ($self, $param) = @_;
+
+  return undef if $self->{ignore_fields}{$param};
+
+  return $self->{fdat}{$param} if exists $self->{fdat}{$param};
+
+  return $self->{object_param_cache}{$param} if exists $self->{object_param_cache}{$param};
+
+  # traverse the list in reverse order for backwards compatibility
+  # with the previous implementation.
+  for my $o (reverse @{$self->{objects}}) {
+    my @v = $o->param($param);
+
+    next unless @v;
+
+    return $self->{object_param_cache}{$param} = @v > 1 ? \@v : $v[0];
+  }
+
+  return undef;
+}
+
 # handles non-html text
 sub text {
   my ($self, $origtext) = @_;
@@ -234,7 +249,7 @@ sub text {
       $value =~ s/\s+$//;
       foreach my $v ( @$values ) {
 	if ( $value eq $v ) {
-	  $self->{output} .= " selected";
+	  $self->{output} .= ' selected="selected"';
         }
       }
       # close <OPTION> tag
@@ -356,6 +371,9 @@ CGI's C<param()>.
   $output = $fif->fill(scalarref => \$html,
              fobject => [$q1, $q2]);
 
+As of 1.04 the object passed does not need to return all its keys with
+a empty param() call.
+
 Note that you can pass multiple objects as an array reference.
 
   $output = $fif->fill(scalarref => \$html,
@@ -395,6 +413,20 @@ To disable the filling of some fields, use the C<ignore_fields> option:
                        fobject => $q,
                        ignore_fields => ['prev','next']);
 
+Note that this module does not clear fields if you set the value to undef.
+It will clear fields if you set the value to an empty array or an empty string.  For example:
+
+  # this will leave the form element foo untouched
+  $output = $fif->fill(scalarref => \$html,
+             fdat => { foo => undef });
+
+  # this will set clear the form element foo
+  $output = $fif->fill(scalarref => \$html,
+             fdat => { foo => "" });
+
+It has been suggested to add a option to the new constructer to change the behavior
+so that undef values will clear the form elements.  Patches welcome.
+
 =back
 
 =head1 CALLING FROM OTHER MODULES
@@ -421,7 +453,7 @@ L<http://www.masonhq.com/docs/faq/#how_can_i_integrate_html_fillin>
 
 =head1 VERSION
 
-This documentation describes HTML::FillInForm module version 1.03.
+This documentation describes HTML::FillInForm module version 1.04.
 
 =head1 SECURITY
 
@@ -456,7 +488,7 @@ insert CGI data into forms, but require that you mix HTML with Perl.
 
 =head1 AUTHOR
 
-(c) 2002 Thomas J. Mather, tjmather@maxmind.com
+(c) 2004 TJ Mather, Maxmind LLC, tjmather@maxmind.com
 
 All rights reserved. This package is free software; you can
 redistribute it and/or modify it under the same terms as Perl itself.
@@ -474,6 +506,7 @@ Fixes, Bug Reports, Docs have been generously provided by:
 
   Tatsuhiko Miyagawa
   Boris Zentner
+  Dave Rolsky
   Patrick Michael Kane
   Ade Olonoh
   Tom Lancaster
@@ -490,5 +523,7 @@ Fixes, Bug Reports, Docs have been generously provided by:
   Jost Krieger
   Gabriel Burka
   Bill Moseley
+  James Tolley
+  Dan Kubb
 
 Thanks!

@@ -46,7 +46,7 @@ my $is_selected = join(" ",map { m/selected/ ? "yes" : "no" } grep /option/, spl
 if ($is_selected eq "no no no yes yes no no no no no yes no"){
        print "ok 2\n";
 } else {
-       print "Got unexpected is_seleced for select menus:\n$is_selected\n$output\n";
+       print "Got unexpected is_selected for select menus:\n$is_selected\n$output\n";
        print "not ok 2\n";
 }
 
