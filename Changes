@@ -1,3 +1,7 @@
+0.14 - May 17th 2001
+
+Removed warning message for submit tags.  (Joseph Yanni)
+
 0.13 - May 13th 2001
 
 Fixed bug when TYPE attr of input tag not set (Martin H. Sluka)

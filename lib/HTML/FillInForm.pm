@@ -79,7 +79,7 @@ sub start {
   if ($self->{option_no_value}) {
     $self->{output} .= '>';
     delete $self->{option_no_value};
-  } 
+  }
   if ($tagname eq 'input'){
     my $value = $self->{fdat}->{$attr->{'name'}};
     # force hidden fields to have a value
@@ -109,8 +109,8 @@ sub start {
 	    $attr->{'checked'} = '__BOOLEAN__';
 	  }
 	}
-      } else {
-	warn(qq(Input field of unknown type "$attr->{type}": $origtext));
+#      } else {
+#	warn(qq(Input field of unknown type "$attr->{type}": $origtext));
       }
     }
     $self->{output} .= "<$tagname";
@@ -397,5 +397,6 @@ Fixes, Bug Reports, Docs have been generously provided by:
   Tatsuhiko Miyagawa
   Mark Stosberg
   Paul Lindner
+  Joseph Yanni
 
 Thanks!
