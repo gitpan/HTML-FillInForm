@@ -11,7 +11,7 @@ use HTML::Parser 3.08;
 require 5.005;
 
 use vars qw($VERSION @ISA);
-$VERSION = '0.26';
+$VERSION = '0.27';
 @ISA = qw(HTML::Parser);
 
 sub new {
@@ -261,6 +261,21 @@ sub escapeHTML {
   return $toencode;
 }
 
+sub comment {
+  my ( $self, $text ) = @_;
+  $self->{output} .= '<!--' . $text . '-->';
+}
+
+sub process {
+  my ( $self, $token0, $text ) = @_;
+  $self->{output} .= $text;
+}
+
+sub declaration {
+  my ( $self, $text ) = @_;
+  $self->{output} .= '<' . $text . '>';
+}
+
 1;
 
 __END__
@@ -344,6 +359,10 @@ This will fill in only the form inside
 
   <FORM name="form1"> ... </FORM>
 
+Note that this method fills in password fields by default.  To disable, pass
+
+  fill_password => 0
+
 =back
 
 =head1 CALLING FROM OTHER MODULES
@@ -364,7 +383,7 @@ HTML::FillInForm is now integrated with Apache::ASP.  To activate, use
 
 =head1 VERSION
 
-This documentation describes HTML::FillInForm module version 0.26.
+This documentation describes HTML::FillInForm module version 0.27.
 
 =head1 SECURITY
 
@@ -407,6 +426,7 @@ L<HTML::Parser>, L<Data::FormValidator>, L<HTML::Template>, L<Apache::PageKit>
 Fixes, Bug Reports, Docs have been generously provided by:
 
   Tatsuhiko Miyagawa
+  Boris Zentner
   Patrick Michael Kane
   Ade Olonoh
   Tom Lancaster
@@ -414,7 +434,6 @@ Fixes, Bug Reports, Docs have been generously provided by:
   Mark Stosberg
   Trevor Schellhorn
   Jim Miner
-  Boris Zentner
   Paul Lindner
   Maurice Aubrey
   Andrew Creer
