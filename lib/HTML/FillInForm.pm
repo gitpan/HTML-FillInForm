@@ -11,7 +11,7 @@ use HTML::Parser 3.08;
 require 5.005;
 
 use vars qw($VERSION @ISA);
-$VERSION = '0.24';
+$VERSION = '0.25';
 @ISA = qw(HTML::Parser);
 
 sub new {
@@ -31,7 +31,13 @@ sub fill {
   my ($self, %option) = @_;
 
   if (my $fdat = $option{fdat}){
-    $self->{fdat} = $fdat;
+    # Copy the structure to prevent side-effects.
+    # Notice that we also convert all values to array references.
+    my %copy;
+    while(my($key, $val) = each %$fdat) {
+      $copy{ $key } = [ ref $val eq 'ARRAY' ? @$val : $val ];
+    }
+    $self->{fdat} = \%copy;
   }
   if(my $objects = $option{fobject}){
     unless(ref($objects) eq 'ARRAY'){
@@ -45,7 +51,7 @@ sub fill {
       foreach my $k ($object->param()){
 	# we expect param to return an array if there are multiple values
 	my @v = $object->param($k);
-	$self->{fdat}->{$k} = scalar(@v)>1 ? \@v : $v[0];
+	$self->{fdat}->{$k} = \@v;
       }
     }
   }
@@ -100,15 +106,15 @@ sub start {
   if ($tagname eq 'input'){
     my $value = exists $attr->{'name'} ? $self->{fdat}->{$attr->{'name'}} : undef;
     # force hidden fields to have a value
-    $value = '' if exists($attr->{'type'}) && $attr->{'type'} eq 'hidden' && ! exists $attr->{'value'} && ! defined $value;
+    $value = [] if exists($attr->{'type'}) && $attr->{'type'} eq 'hidden' && ! exists $attr->{'value'} && ! defined $value;
     if (defined($value)){
       # check for input type, noting that default type is text
       if (!exists $attr->{'type'} ||
 	  $attr->{'type'} =~ /^(text|textfield|hidden|password|)$/i){
-	$value = (shift @$value || '') if ref($value) eq 'ARRAY';
+	$value = (shift @$value || '');
 	$attr->{'value'} = $value;
       } elsif (lc $attr->{'type'} eq 'radio'){
-	$value = (shift @$value || '') if ref($value) eq 'ARRAY';
+        $value = $value->[0];
 	# value for radio boxes default to 'on', works with netscape
 	$attr->{'value'} = 'on' unless exists $attr->{'value'};
 	if ($attr->{'value'} eq $value){
@@ -117,10 +123,6 @@ sub start {
 	  delete $attr->{'checked'};
 	}
       } elsif (lc $attr->{'type'} eq 'checkbox'){
-	unless ( ref($value) eq 'ARRAY' ) {
-	  $value = [ $value ];
-	}
-
 	# value for checkboxes default to 'on', works with netscape
 	$attr->{'value'} = 'on' unless exists $attr->{'value'};
 
@@ -150,9 +152,6 @@ sub start {
   } elsif ($tagname eq 'option'){
     my $value = $self->{fdat}->{$self->{selectName}};
     if (defined($value)){
-      unless ( ref($value) eq 'ARRAY' ) {
-	$value = [ $value ];
-      }
       delete $attr->{selected} if exists $attr->{selected};
 
       if(defined($attr->{'value'})){
@@ -184,7 +183,7 @@ sub start {
     }
   } elsif ($tagname eq 'textarea'){
     if (defined(my $value = $self->{fdat}->{$attr->{'name'}})){
-      $value = (shift @$value || '') if ref($value) eq 'ARRAY';
+      $value = (shift @$value || '');
       # <textarea> foobar </textarea> -> <textarea> $value </textarea>
       # we need to set outputText to 'no' so that 'foobar' won't be printed
       $self->{outputText} = 'no';
@@ -356,7 +355,7 @@ HTML::FillInForm is now integrated with Apache::ASP.  To activate, use
 
 =head1 VERSION
 
-This documentation describes HTML::FillInForm module version 0.24.
+This documentation describes HTML::FillInForm module version 0.25.
 
 =head1 SECURITY
 
@@ -385,7 +384,7 @@ insert CGI data into forms, but require that you mix HTML with Perl.
 
 =head1 AUTHOR
 
-(c) 2000, 2001 Thomas J. Mather, tjmather@tjmather.com
+(c) 2002 Thomas J. Mather, tjmather@tjmather.com
 
 All rights reserved. This package is free software; you can
 redistribute it and/or modify it under the same terms as Perl itself.
@@ -408,6 +407,7 @@ Fixes, Bug Reports, Docs have been generously provided by:
   Jim Miner
   Boris Zentner
   Paul Lindner
+  Maurice Aubrey
   Andrew Creer
   Joseph Yanni
   Philip Mak

@@ -1,3 +1,8 @@
+0.25 - April 3rd 2002
+
+Fixed bug with passing single value to multi-valued fields
+(Maurice Aubrey)
+
 0.24 - March 3rd 2002
 
 Added no_debug to use CGI in t/13_warning.t
