@@ -1,3 +1,7 @@
+0.16 - June 28th 2001
+
+Fixed problems with HTML escaping (Tatsuhiko Miyagawa)
+
 0.15 - June 18th 2001
 
 Works with checkbox tags that don't have value attribute.  (Philip Mak)

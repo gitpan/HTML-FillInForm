@@ -11,7 +11,7 @@ use HTML::Parser 3.08;
 require 5.005;
 
 use vars qw($VERSION @ISA);
-$VERSION = '0.15';
+$VERSION = '0.16';
 @ISA = qw(HTML::Parser);
 
 sub new {
@@ -89,7 +89,7 @@ sub start {
       if (!exists $attr->{'type'} ||
 	  $attr->{'type'} =~ /^(text|textfield|hidden|password|)$/i){
 	$value = $value->[0] if ref($value) eq 'ARRAY';
-	$attr->{'value'} = $self->escapeHTML($value);
+	$attr->{'value'} = $value;
       } elsif (lc $attr->{'type'} eq 'radio'){
 	$value = $value->[0] if ref($value) eq 'ARRAY';
 	# value for radio boxes default to 'on', works with netscape
@@ -124,7 +124,7 @@ sub start {
 	# boolean attribute
 	$self->{output} .= " $key";
       } else {
-	$self->{output} .= " $key" . qq(="$value");
+	$self->{output} .= sprintf qq( %s="%s"), $key, $self->escapeHTML($value);
       }
     }
     $self->{output} .= ">";
@@ -155,7 +155,7 @@ sub start {
 	# boolean attribute
 	$self->{output} .= " $key";
       } else {
-	$self->{output} .= " $key" . qq(="$value");
+	$self->{output} .= sprintf qq( %s="%s"), $key, $self->escapeHTML($value);
       }
     }
     unless ($self->{option_no_value}){
@@ -190,8 +190,8 @@ sub text {
       my $values = $self->{option_no_value};
       chomp(my $value = $origtext);
       foreach my $v ( @$values ) {
-	if ( $value eq $v ) {
-        $self->{output} .= " selected";
+	if ( $value eq $self->escapeHTML($v) ) {
+	  $self->{output} .= " selected";
         }
       }
       # close <OPTION> tag
@@ -356,7 +356,7 @@ L<HTML::Parser>
 
 =head1 VERSION
 
-This documentation describes HTML::FillInForm module version 0.15.
+This documentation describes HTML::FillInForm module version 0.16.
 
 =head1 SECURITY
 
@@ -398,8 +398,8 @@ Fixes, Bug Reports, Docs have been generously provided by:
   Tom Lancaster
   Martin H Sluka
   Jim Miner
-  Ade Olonoh
   Tatsuhiko Miyagawa
+  Ade Olonoh
   Mark Stosberg
   Paul Lindner
   Joseph Yanni
