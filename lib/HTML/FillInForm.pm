@@ -11,7 +11,7 @@ use HTML::Parser 3.08;
 require 5.005;
 
 use vars qw($VERSION @ISA);
-$VERSION = '0.22';
+$VERSION = '0.23';
 @ISA = qw(HTML::Parser);
 
 sub new {
@@ -98,7 +98,7 @@ sub start {
     delete $self->{option_no_value};
   }
   if ($tagname eq 'input'){
-    my $value = $self->{fdat}->{$attr->{'name'}};
+    my $value = exists $attr->{'name'} ? $self->{fdat}->{$attr->{'name'}} : undef;
     # force hidden fields to have a value
     $value = '' if exists($attr->{'type'}) && $attr->{'type'} eq 'hidden' && ! exists $attr->{'value'} && ! defined $value;
     if (defined($value)){
@@ -332,7 +332,7 @@ one form you want to fill in, specify target.
                        fobject => $q,
                        target => 'form1');
 
-This will fill in only a form inside
+This will fill in only the form inside
 
   <FORM name="form1"> ... </FORM>
 
@@ -372,7 +372,7 @@ Config.xml file of L<Apache::PageKit>.
 
 =head1 BUGS
 
-Please submit any bug reports to tjmather@anidea.com.
+Please submit any bug reports to tjmather@tjmather.com.
 
 =head1 NOTES
 
@@ -406,6 +406,7 @@ Fixes, Bug Reports, Docs have been generously provided by:
   Mark Stosberg
   Trevor Schellhorn
   Jim Miner
+  Boris Zentner
   Paul Lindner
   Andrew Creer
   Joseph Yanni

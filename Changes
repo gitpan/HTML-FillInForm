@@ -1,3 +1,7 @@
+0.23 - January 4th 2001
+
+Cleaned up warning messages for input fields without a name (Boris Zentner)
+
 0.22 - November 10th 2001
 
 Fixed bug with multiple inputs (Mark Stosberg)
