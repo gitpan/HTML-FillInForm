@@ -12,7 +12,7 @@ use HTML::Parser 3.26;
 require 5.005;
 
 use vars qw($VERSION @ISA);
-$VERSION = '1.01';
+$VERSION = '1.02';
 
 @ISA = qw(HTML::Parser);
 
@@ -421,7 +421,7 @@ L<http://www.masonhq.com/docs/faq/#how_can_i_integrate_html_fillin>
 
 =head1 VERSION
 
-This documentation describes HTML::FillInForm module version 1.01.
+This documentation describes HTML::FillInForm module version 1.02.
 
 =head1 SECURITY
 

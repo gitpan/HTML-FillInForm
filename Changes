@@ -1,3 +1,8 @@
+1.02 - June 10th 2003
+
+Updated required version number for HTML::Parser to 3.26 in Makefile.PL
+(Ken Williams)
+
 1.01 - December 31st 2002
 
 Fixed issue with HTML::Parser decoding high-bit entities, by setting

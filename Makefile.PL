@@ -4,5 +4,5 @@ use ExtUtils::MakeMaker;
 WriteMakefile(
     'NAME'		=> 'HTML::FillInForm',
     'VERSION_FROM'	=> 'lib/HTML/FillInForm.pm', # finds $VERSION
-    'PREREQ_PM'		=> {HTML::Parser => 3.08}, # e.g., Module::Name => 1.1
+    'PREREQ_PM'		=> {HTML::Parser => 3.26}, # e.g., Module::Name => 1.1
 );
