@@ -5,13 +5,13 @@ use strict; # and no funny business, either.
 
 use Carp; # generate better errors with more context
 
-use HTML::Parser 3;
+use HTML::Parser 3.08;
 
 # required for UNIVERSAL->can
 require 5.005;
 
 use vars qw($VERSION @ISA);
-$VERSION = '0.03';
+$VERSION = '0.05';
 @ISA = qw(HTML::Parser);
 
 sub new {
@@ -68,31 +68,38 @@ sub fill {
 
 # handles opening HTML tags such as <input ...>
 sub start {
-  my ($self, $tag, $attr, $attrseq, $origtext) = @_;
-  if ($tag =~ m/^(input|option)$/){
-    if ($tag eq 'input'){
+  my ($self, $tagname, $attr, $attrseq, $origtext) = @_;
+  # HTML::Parser converts tagname to lowercase, so we don't need /i
+  if ($tagname =~ m/^(input|option)$/){
+    if ($tagname eq 'input'){
       my $value = $self->{fdat}->{$attr->{'name'}};
       # force hidden fields to have a value
       $value ||= '' if $attr->{'type'} eq 'hidden' && !$attr->{'value'};
       if (defined($value)){
         if ($attr->{'type'} =~ /^(text|textfield|hidden|password)$/i){
 	  $attr->{'value'} = $self->escapeHTML($value);
-	} elsif ($attr->{'type'} =~ /^(radio|checkbox)$/i){
+	} elsif (lc $attr->{'type'} eq 'radio'){
 	  if ($attr->{'value'} eq $value){
+	    $attr->{'checked'} = '__BOOLEAN__';
+	  } else {
+	    delete $attr->{'checked'};
+	  }
+	} elsif (lc $attr->{'type'} eq 'checkbox'){
+	  if ($value){
 	    $attr->{'checked'} = '__BOOLEAN__';
 	  } else {
 	    delete $attr->{'checked'};
 	  }
 	}
       }
-    } elsif ($tag eq 'option'){
+    } elsif ($tagname eq 'option'){
       if($attr->{'value'} eq $self->{fdat}->{$self->{selectName}}){
 	$attr->{selected} = '__BOOLEAN__';
       } else {
 	delete $attr->{selected} if exists $attr->{selected};
       }
     }
-    $self->{output} .= "<$tag";
+    $self->{output} .= "<$tagname";
     while (my ($key, $value) = each %$attr) {
       if($value eq '__BOOLEAN__'){
 	# boolean attribute
@@ -102,7 +109,7 @@ sub start {
       }
     }
     $self->{output} .= ">";
-  } elsif ($tag eq 'textarea'){
+  } elsif ($tagname eq 'textarea'){
     if (my $value = $self->{fdat}->{$attr->{'name'}}){
       # <textarea> foobar </textarea> -> <textarea> $value <textarea>
       # we need to set outputText to 'no' so that 'foobar' won't be printed
@@ -111,7 +118,7 @@ sub start {
     } else {
       $self->{output} .= $origtext;
     }
-  } elsif ($tag eq 'select'){
+  } elsif ($tagname eq 'select'){
     $self->{selectName} = $attr->{'name'};
     $self->{output} .= $origtext;
   } else {
@@ -130,10 +137,10 @@ sub text {
 
 # handles closing HTML tags such as </textarea>
 sub end {
-  my ($self, $tag, $origtext) = @_;
-  if($tag eq 'select'){
+  my ($self, $tagname, $origtext) = @_;
+  if($tagname eq 'select'){
     delete $self->{selectName};
-  } elsif ($tag eq 'textarea'){
+  } elsif ($tagname eq 'textarea'){
     delete $self->{outputText};
   }
   $self->{output} .= $origtext;
@@ -255,18 +262,19 @@ L<HTML::Parser>
 
 =head1 VERSION
 
-This documenation describes HTML::FillInForm module version 0.03.
+This documentation describes HTML::FillInForm module version 0.04.
 
 =head1 BUGS
 
 This module has not been tested extensively.  Please submit
-and bug reports to tjmather@alumni.princeton.edu.
+any bug reports to tjmather@alumni.princeton.edu.
 
 =head1 NOTES
 
 Requires Perl 5.005 and L<HTML::Parser> version 3.
 
-I wrote this module because I wanted to be able to insert CGI data into HTML forms,
+I wrote this module because I wanted to be able to insert CGI data
+into HTML forms,
 but without combining the HTML and Perl code.  CGI.pm and Embperl allow you so
 insert CGI data into forms, but require that you mix HTML with Perl.
 
