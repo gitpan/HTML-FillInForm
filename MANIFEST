@@ -18,3 +18,4 @@ t/11_target.t
 t/12_mult.t
 t/13_warning.t
 t/14_password.t
+t/15_multiple_fields.t

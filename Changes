@@ -1,3 +1,10 @@
+0.28 - April 27th 2002
+
+Added missing ! in declaration handler (Boris Zentner)
+
+Fill all values with the same name if one value is passed
+(Boris Zentner, Gabriel Burka)
+
 0.27 - April 20th 2002
 
 Fixes to pass through comments, processing instructions, and
