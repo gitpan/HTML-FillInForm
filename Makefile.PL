@@ -3,6 +3,6 @@ use ExtUtils::MakeMaker;
 # the contents of the Makefile that is written.
 WriteMakefile(
     'NAME'		=> 'HTML::FillInForm',
-    'VERSION_FROM'	=> 'FillInForm.pm', # finds $VERSION
+    'VERSION_FROM'	=> 'lib/HTML/FillInForm.pm', # finds $VERSION
     'PREREQ_PM'		=> {HTML::Parser => 3.08}, # e.g., Module::Name => 1.1
 );

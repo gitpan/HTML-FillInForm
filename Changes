@@ -1,3 +1,13 @@
+0.06 - October 9th 2000
+
+Fixed bug with "0" value in (hidden) fields
+
+Added docs from using HTML::FillInForm from Apache::ASP and Apache::PageKit
+
+0.05 - August 28th 2000
+
+Added better support for checkboxes.
+
 0.04 - August 10th 2000
 
 Fixed bug with hidden fields

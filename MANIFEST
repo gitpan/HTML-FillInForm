@@ -1,6 +1,6 @@
 Changes
 Makefile.PL
 MANIFEST
-FillInForm.pm
+lib/HTML/FillInForm.pm
 README
 test.pl

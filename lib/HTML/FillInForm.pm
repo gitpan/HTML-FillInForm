@@ -11,7 +11,7 @@ use HTML::Parser 3.08;
 require 5.005;
 
 use vars qw($VERSION @ISA);
-$VERSION = '0.05';
+$VERSION = '0.06';
 @ISA = qw(HTML::Parser);
 
 sub new {
@@ -74,7 +74,7 @@ sub start {
     if ($tagname eq 'input'){
       my $value = $self->{fdat}->{$attr->{'name'}};
       # force hidden fields to have a value
-      $value ||= '' if $attr->{'type'} eq 'hidden' && !$attr->{'value'};
+      $value = '' if $attr->{'type'} eq 'hidden' && ! exists $attr->{'value'} && ! defined $value;
       if (defined($value)){
         if ($attr->{'type'} =~ /^(text|textfield|hidden|password)$/i){
 	  $attr->{'value'} = $self->escapeHTML($value);
@@ -256,22 +256,61 @@ and
 
 =back
 
+=head1 CALLING FROM WEB APPLICATION FRAMEWORKS
+
+=head2 Apache::PageKit
+
+To use HTML::FillInForm in L<Apache::PageKit> is easy.  It is
+automagically called for any page that includes a <form> tag.
+
+=head2 Apache::ASP
+
+To use HTML::FillInForm, put the following in global.asa
+
+  sub fillin {
+    my $args = shift;
+    my $html = shift;
+    my $fif = new HTML::FillInForm;
+    my $output = $fif->fill(
+                           scalarref => \$html,
+                           fdat      => $Apps::Param,
+                           );
+    $Response->Write($output);
+  }
+
+Note $Apps::Param is set to either the querystring or form data.
+Replace with $Request->QueryString or $Request->Form if you wish.
+
+Then put something like this in your apache configuration:
+
+  XMLSubsMatch fillin
+
+Finally, surround your forms like this:
+
+  <fillin>
+    <form>
+      <input name="myfield">
+    </form>
+  </fillin>
+
+See http://forum.swarthmore.edu/epigone/modperl/malskalko for more details.
+
 =head1 SEE ALSO
 
 L<HTML::Parser>
 
 =head1 VERSION
 
-This documentation describes HTML::FillInForm module version 0.04.
+This documentation describes HTML::FillInForm module version 0.06.
 
 =head1 BUGS
 
 This module has not been tested extensively.  Please submit
-any bug reports to tjmather@alumni.princeton.edu.
+any bug reports to tjmather@anidea.com.
 
 =head1 NOTES
 
-Requires Perl 5.005 and L<HTML::Parser> version 3.
+Requires Perl 5.005 and L<HTML::Parser> version 3.08.
 
 I wrote this module because I wanted to be able to insert CGI data
 into HTML forms,
@@ -287,8 +326,9 @@ redistribute it and/or modify it under the same terms as Perl itself.
 
 =head1 CREDITS
 
-Fixes, Bug Reports have been generously provided by:
+Fixes, Bug Reports, Docs have been generously provided by:
 
   Tom Lancaster
+  Paul Lindner
 
 Thanks!
