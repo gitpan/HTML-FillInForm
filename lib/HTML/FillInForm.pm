@@ -11,7 +11,7 @@ use HTML::Parser 3.08;
 require 5.005;
 
 use vars qw($VERSION @ISA);
-$VERSION = '0.12';
+$VERSION = '0.13';
 @ISA = qw(HTML::Parser);
 
 sub new {
@@ -83,9 +83,11 @@ sub start {
   if ($tagname eq 'input'){
     my $value = $self->{fdat}->{$attr->{'name'}};
     # force hidden fields to have a value
-    $value = '' if $attr->{'type'} eq 'hidden' && ! exists $attr->{'value'} && ! defined $value;
+    $value = '' if exists($attr->{'type'}) && $attr->{'type'} eq 'hidden' && ! exists $attr->{'value'} && ! defined $value;
     if (defined($value)){
-      if ($attr->{'type'} =~ /^(text|textfield|hidden|password)$/i){
+      # check for input type, noting that default type is text
+      if (!exists $attr->{'type'} ||
+	  $attr->{'type'} =~ /^(text|textfield|hidden|password|)$/i){
 	$value = $value->[0] if ref($value) eq 'ARRAY';
 	$attr->{'value'} = $self->escapeHTML($value);
       } elsif (lc $attr->{'type'} eq 'radio'){
@@ -107,6 +109,8 @@ sub start {
 	    $attr->{'checked'} = '__BOOLEAN__';
 	  }
 	}
+      } else {
+	warn(qq(Input field of unknown type "$attr->{type}": $origtext));
       }
     }
     $self->{output} .= "<$tagname";
@@ -329,7 +333,7 @@ and
 
 =head2 Apache::PageKit
 
-To use HTML::FillInForm in L<Apache::PageKit> is easy.  By default it is
+To use HTML::FillInForm in L<Apache::PageKit> is easy.   It is
 automatically called for any page that includes a <form> tag.
 It can be turned on or off by using the C<fill_in_form> configuration
 option.
@@ -347,7 +351,19 @@ L<HTML::Parser>
 
 =head1 VERSION
 
-This documentation describes HTML::FillInForm module version 0.12.
+This documentation describes HTML::FillInForm module version 0.13.
+
+=head1 SECURITY
+
+Note that you might want to think about caching issues if you have password
+fields on your page.  There is a discussion of this issue at
+
+http://www.perlmonks.org/index.pl?node_id=70482
+
+In summary, some browsers will cache the output of CGI scripts, and you
+can control this by setting the Expires header.  For example, use
+C<-expires> in L<CGI.pm> or set C<browser_cache> to I<no> in 
+Config.xml file of L<Apache::PageKit>.
 
 =head1 BUGS
 
@@ -375,9 +391,11 @@ Fixes, Bug Reports, Docs have been generously provided by:
 
   Patrick Michael Kane
   Tom Lancaster
+  Martin H Sluka
   Jim Miner
   Ade Olonoh
   Tatsuhiko Miyagawa
+  Mark Stosberg
   Paul Lindner
 
 Thanks!
