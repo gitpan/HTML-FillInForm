@@ -1,8 +1,8 @@
 Changes
-Makefile.PL
 MANIFEST
-lib/HTML/FillInForm.pm
+Makefile.PL
 README
+lib/HTML/FillInForm.pm
 t/00_base.t
 t/01_form.t
 t/02_hidden.t
@@ -15,3 +15,6 @@ t/08_multiple_objects.t
 t/09_default_type.t
 t/10_escape.t
 t/11_target.t
+t/12_mult.t
+t/13_warning.t
+t/14_password.t

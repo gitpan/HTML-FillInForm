@@ -11,7 +11,7 @@ use HTML::Parser 3.08;
 require 5.005;
 
 use vars qw($VERSION @ISA);
-$VERSION = '0.25';
+$VERSION = '0.26';
 @ISA = qw(HTML::Parser);
 
 sub new {
@@ -57,6 +57,12 @@ sub fill {
   }
   if (my $target = $option{target}){
     $self->{'target'} = $target;
+  }
+
+  if (defined($option{fill_password})){
+    $self->{fill_password} = $option{fill_password};
+  } else {
+    $self->{fill_password} = 1;
   }
 
   # make sure method has data to fill in HTML form with!
@@ -110,8 +116,11 @@ sub start {
     if (defined($value)){
       # check for input type, noting that default type is text
       if (!exists $attr->{'type'} ||
-	  $attr->{'type'} =~ /^(text|textfield|hidden|password|)$/i){
+	  $attr->{'type'} =~ /^(text|textfield|hidden|)$/i){
 	$value = (shift @$value || '');
+	$attr->{'value'} = $value;
+      } elsif (lc $attr->{'type'} eq 'password' && $self->{fill_password}) {
+	$value = shift @$value || '';
 	$attr->{'value'} = $value;
       } elsif (lc $attr->{'type'} eq 'radio'){
         $value = $value->[0];
@@ -355,7 +364,7 @@ HTML::FillInForm is now integrated with Apache::ASP.  To activate, use
 
 =head1 VERSION
 
-This documentation describes HTML::FillInForm module version 0.25.
+This documentation describes HTML::FillInForm module version 0.26.
 
 =head1 SECURITY
 

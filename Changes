@@ -1,3 +1,7 @@
+0.26 - April 16th 2002
+
+Added fill_password option (Tatsuhiko Miyagawa)
+
 0.25 - April 3rd 2002
 
 Fixed bug with passing single value to multi-valued fields
