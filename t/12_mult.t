@@ -1,3 +1,4 @@
+# -*- Mode: Perl; -*-
 
 use strict;
 
@@ -17,7 +18,7 @@ my %fdat = (foo1 => ['bar1','bar2']);
 my $fif = new HTML::FillInForm;
 my $output = $fif->fill(scalarref => \$hidden_form_in,
 			fdat => \%fdat);
-if ($output =~ m/^<input( (type="TEXT"|name="foo1"|value="bar1")){3}>\s*<input( (type="text"|name="foo1"|value="bar2")){3}\/>$/){
+if ($output =~ m/^<input( (type="TEXT"|name="foo1"|value="bar1")){3}>\s*<input( (type="text"|name="foo1"|value="bar2")){3} \/>$/){
 	print "ok 2\n";
 } else {
 	print "Got unexpected out for $hidden_form_in:\n$output\n";
@@ -28,7 +29,7 @@ if ($output =~ m/^<input( (type="TEXT"|name="foo1"|value="bar1")){3}>\s*<input( 
 
 $output = $fif->fill(scalarref => \$hidden_form_in,
 			fdat => \%fdat);
-if ($output =~ m/^<input( (type="TEXT"|name="foo1"|value="bar1")){3}>\s*<input( (type="text"|name="foo1"|value="")){3}\/>$/){
+if ($output =~ m/^<input( (type="TEXT"|name="foo1"|value="bar1")){3}>\s*<input( (type="text"|name="foo1"|value="")){3} \/>$/){
 	print "ok 3\n";
 } else {
 	print "Got unexpected out for $hidden_form_in:\n$output\n";

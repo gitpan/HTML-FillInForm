@@ -1,3 +1,4 @@
+# -*- Mode: Perl; -*-
 
 use strict;
 
@@ -18,7 +19,7 @@ my %fdat = (foo1 => 'bar1',
 my $fif = new HTML::FillInForm;
 my $output = $fif->fill(scalarref => \$hidden_form_in,
 			fdat => \%fdat);
-if ($output =~ m/^<input( (type="TEXT"|name="foo1"|value="bar1")){3}>\s*<input( (type="hidden"|name="foo2"|value="&quot;bar2&quot;")){3}\/>$/){
+if ($output =~ m/^<input( (type="TEXT"|name="foo1"|value="bar1")){3}>\s*<input( (type="hidden"|name="foo2"|value="&quot;bar2&quot;")){3} \/>$/){
 	print "ok 2\n";
 } else {
 	print "Got unexpected out for $hidden_form_in:\n$output\n";

@@ -1,3 +1,4 @@
+# -*- Mode: Perl; -*-
 
 use strict;
 

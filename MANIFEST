@@ -20,3 +20,4 @@ t/13_warning.t
 t/14_password.t
 t/15_multiple_fields.t
 t/16_ignore_fields.t
+t/17_xhtml.t

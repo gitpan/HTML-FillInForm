@@ -11,7 +11,7 @@ use HTML::Parser 3.08;
 require 5.005;
 
 use vars qw($VERSION @ISA);
-$VERSION = '0.29';
+$VERSION = '1.00';
 
 @ISA = qw(HTML::Parser);
 
@@ -161,7 +161,8 @@ sub start {
 	$self->{output} .= sprintf qq( %s="%s"), $key, $self->escapeHTML($value);
       }
     }
-    $self->{output} .= '/' if $attr->{'/'};
+    # extra space put here to work around Opera 6.01/6.02 bug
+    $self->{output} .= ' /' if $attr->{'/'};
     $self->{output} .= ">";
   } elsif ($tagname eq 'option'){
     my $value = $self->{fdat}->{$self->{selectName}};
@@ -395,7 +396,7 @@ HTML::FillInForm is now integrated with Apache::ASP.  To activate, use
 
 =head1 VERSION
 
-This documentation describes HTML::FillInForm module version 0.29.
+This documentation describes HTML::FillInForm module version 1.00.
 
 =head1 SECURITY
 
@@ -453,5 +454,6 @@ Fixes, Bug Reports, Docs have been generously provided by:
   Philip Mak
   Jost Krieger
   Gabriel Burka
+  Bill Moseley
 
 Thanks!

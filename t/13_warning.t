@@ -1,3 +1,5 @@
+# -*- Mode: Perl; -*-
+
 #!/usr/bin/perl -w
 
 # emits warnings for HTML::FIF <= 0.22

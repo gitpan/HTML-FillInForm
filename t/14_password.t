@@ -1,3 +1,5 @@
+# -*- Mode: Perl; -*-
+
 #!/usr/bin/perl -w
 
 use CGI qw(:no_debug);

@@ -1,3 +1,8 @@
+1.00 - August 28th 2002
+
+Workaround for Opera 6.01/02 bug with selected radio boxes -
+place space before ending "/>" in <input .. /> (Bill Moseley)
+
 0.29 - May 5th 2002
 
 Added ignore_fields option (Boris Zentner)

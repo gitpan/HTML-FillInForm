@@ -8,6 +8,14 @@ submitted info.
 
 Please note that this module requires HTML::Parser 3.08 or greater.
 
+HTML::FillInForm installed by default by several web hosting providers,
+including pair.com - see
+http://www.pair.com/pair/support/library/serverconfig/perlmods.html
+
+It is also available as a package for some Linux distribution, including Mandrake.
+See:
+http://rpmfind.net/linux/RPM/cooker/cooker/i586/Mandrake/RPMS/perl-HTML-FillInForm-0.29-2mdk.noarch.html
+
 Copyright (c) 2002 Thomas J. Mather, tjmather@tjmather.com 
 
 All rights reserved. This package is free software; you can redistribute
