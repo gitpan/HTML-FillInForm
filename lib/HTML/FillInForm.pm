@@ -11,7 +11,7 @@ use HTML::Parser 3.08;
 require 5.005;
 
 use vars qw($VERSION @ISA);
-$VERSION = '0.16';
+$VERSION = '0.17';
 @ISA = qw(HTML::Parser);
 
 sub new {
@@ -49,7 +49,9 @@ sub fill {
       }
     }
   }
-
+  if (my $target = $option{target}){
+    $self->{'target'} = $target;
+  }
 #  # get data set from param() method
 #  foreach my $key ($self->param){
 #    $self->{fdat}->{$key} = $self->param($key);
@@ -75,6 +77,25 @@ sub fill {
 # handles opening HTML tags such as <input ...>
 sub start {
   my ($self, $tagname, $attr, $attrseq, $origtext) = @_;
+
+  # set the current form
+  if ($tagname eq 'form') {
+    if (exists $attr->{'name'}) {
+      $self->{'current_form'} = $attr->{'name'};
+    } else {
+      # in case of previous one without </FORM>
+      delete $self->{'current_form'};
+    }
+  }
+
+  # This form is not my target.
+  if (exists $self->{'target'} &&
+      (! exists $self->{'current_form'} ||
+       $self->{'current_form'} ne $self->{'target'})) {
+    $self->{'output'} .= $origtext;
+    return;
+  }
+  
   # HTML::Parser converts tagname to lowercase, so we don't need /i
   if ($self->{option_no_value}) {
     $self->{output} .= '>';
@@ -214,6 +235,8 @@ sub end {
     delete $self->{selectName};
   } elsif ($tagname eq 'textarea'){
     delete $self->{outputText};
+  } elsif ($tagname eq 'form') {
+    delete $self->{'current_form'};
   }
   $self->{output} .= $origtext;
 }
@@ -332,6 +355,17 @@ and
   $output = $fif->fill(file => 'form.tmpl',
              fobject => $q);
 
+Suppose you have multiple forms in a html and among them there is only
+one form you want to fill in, specify target.
+
+  $output = $fif->fill(scalarref => \$html,
+                       fobject => $q,
+                       target => 'form1');
+
+This will fill in only a form inside
+
+  <FORM name="form1"> ... </FORM>
+
 =back
 
 =head1 CALLING FROM OTHER MODULES
@@ -356,7 +390,7 @@ L<HTML::Parser>
 
 =head1 VERSION
 
-This documentation describes HTML::FillInForm module version 0.16.
+This documentation describes HTML::FillInForm module version 0.17.
 
 =head1 SECURITY
 
@@ -390,15 +424,19 @@ insert CGI data into forms, but require that you mix HTML with Perl.
 All rights reserved. This package is free software; you can
 redistribute it and/or modify it under the same terms as Perl itself.
 
+=head1 SEE ALSO
+
+L<Data::FormValidator>, L<HTML::Template>, L<Apache::PageKit>
+
 =head1 CREDITS
 
 Fixes, Bug Reports, Docs have been generously provided by:
 
+  Tatsuhiko Miyagawa
   Patrick Michael Kane
   Tom Lancaster
   Martin H Sluka
   Jim Miner
-  Tatsuhiko Miyagawa
   Ade Olonoh
   Mark Stosberg
   Paul Lindner
