@@ -19,3 +19,4 @@ t/12_mult.t
 t/13_warning.t
 t/14_password.t
 t/15_multiple_fields.t
+t/16_ignore_fields.t

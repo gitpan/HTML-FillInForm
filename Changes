@@ -1,3 +1,7 @@
+0.29 - May 5th 2002
+
+Added ignore_fields option (Boris Zentner)
+
 0.28 - April 27th 2002
 
 Added missing ! in declaration handler (Boris Zentner)

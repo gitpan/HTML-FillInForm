@@ -11,7 +11,8 @@ use HTML::Parser 3.08;
 require 5.005;
 
 use vars qw($VERSION @ISA);
-$VERSION = '0.28';
+$VERSION = '0.29';
+
 @ISA = qw(HTML::Parser);
 
 sub new {
@@ -30,6 +31,10 @@ sub fill_scalarref { my $self = shift; return $self->fill('scalarref',@_); }
 sub fill {
   my ($self, %option) = @_;
 
+  my %ignore_fields;
+  %ignore_fields = map { $_ => 1 } ( ref $option{'ignore_fields'} eq 'ARRAY' )
+    ? @{ $option{ignore_fields} } : $option{ignore_fields} if exists( $option{ignore_fields} );
+  
   if (my $fdat = $option{fdat}){
     # Copy the structure to prevent side-effects.
     my %copy;
@@ -48,6 +53,7 @@ sub fill {
       defined($object->can('param')) or
 	croak("HTML::FillInForm->fill called with fobject option, containing object of type " . ref($object) . " which lacks a param() method!");
       foreach my $k ($object->param()){
+        next if exists $ignore_fields{$k};
 	# we expect param to return an array if there are multiple values
 	my @v = $object->param($k);
 	$self->{fdat}->{$k} = scalar(@v)>1 ? \@v : $v[0];
@@ -363,6 +369,12 @@ Note that this method fills in password fields by default.  To disable, pass
 
   fill_password => 0
 
+To disable the filling of some fields, use the C<ignore_fields> option:
+
+  $output = $fif->fill(scalarref => \$html,
+                       fobject => $q,
+                       ignore_fields => ['prev','next']);
+
 =back
 
 =head1 CALLING FROM OTHER MODULES
@@ -383,7 +395,7 @@ HTML::FillInForm is now integrated with Apache::ASP.  To activate, use
 
 =head1 VERSION
 
-This documentation describes HTML::FillInForm module version 0.28.
+This documentation describes HTML::FillInForm module version 0.29.
 
 =head1 SECURITY
 
