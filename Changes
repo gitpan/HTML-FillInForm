@@ -1,3 +1,9 @@
+0.08 - January 15th 2000
+
+Option tags without "value" attribute get filled in correctly.
+
+Will not croak anymore if fobject's param method returns undef.
+
 0.07 - January 5th 2000
 
 Added support for multiple checkboxes and select fields, thanks

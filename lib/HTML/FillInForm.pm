@@ -11,7 +11,7 @@ use HTML::Parser 3.08;
 require 5.005;
 
 use vars qw($VERSION @ISA);
-$VERSION = '0.07';
+$VERSION = '0.08';
 @ISA = qw(HTML::Parser);
 
 sub new {
@@ -34,6 +34,7 @@ sub fill {
       # make sure objects in 'param_object' parameter support param()
     defined($object->can('param')) or
       croak("HTML::FillInForm->fill called with fobject option, containing object of type " . ref($object) . " which lacks a param() method!");
+    $self->{fdat} = {};
     foreach my $k ($object->param()){
       # we expect param to return an array if there are multiple values
       my @v = $object->param($k);
@@ -44,13 +45,13 @@ sub fill {
     $self->{fdat} = $fdat;
   }
 
-  # get data set from param() method
-  foreach my $key ($self->param){
-    $self->{fdat}->{$key} = $self->param($key);
-  }
+#  # get data set from param() method
+#  foreach my $key ($self->param){
+#    $self->{fdat}->{$key} = $self->param($key);
+#  }
 
   # make sure method has data to fill in HTML form with!
-  unless($self->{fdat}){
+  unless(exists $self->{fdat}){
     croak("HTML::FillInForm->fillInForm() called without 'object' or 'fdat' parameter set");
   }
 
@@ -70,48 +71,33 @@ sub fill {
 sub start {
   my ($self, $tagname, $attr, $attrseq, $origtext) = @_;
   # HTML::Parser converts tagname to lowercase, so we don't need /i
-  if ($tagname =~ m/^(input|option)$/){
-    if ($tagname eq 'input'){
-      my $value = $self->{fdat}->{$attr->{'name'}};
-      # force hidden fields to have a value
-      $value = '' if $attr->{'type'} eq 'hidden' && ! exists $attr->{'value'} && ! defined $value;
-      if (defined($value)){
-        if ($attr->{'type'} =~ /^(text|textfield|hidden|password)$/i){
-	  $value = $value->[0] if ref($value) eq 'ARRAY';
-	  $attr->{'value'} = $self->escapeHTML($value);
-	} elsif (lc $attr->{'type'} eq 'radio'){
-	  $value = $value->[0] if ref($value) eq 'ARRAY';
-	  if ($attr->{'value'} eq $value){
-	    $attr->{'checked'} = '__BOOLEAN__';
-	  } else {
-	    delete $attr->{'checked'};
-	  }
-	} elsif (lc $attr->{'type'} eq 'checkbox'){
-	  unless ( ref($value) eq 'ARRAY' ) {
-	    $value = [ $value ];
-	  }
-
-	  delete $attr->{'checked'}; # Everything is unchecked to start
-
-	  foreach my $v ( @$value ) {
-	    if ( $attr->{'value'} eq $v ) {
-	      $attr->{'checked'} = '__BOOLEAN__';
-	    }
-	  }
+#  if ($tagname =~ m/^(input|option)$/){
+  if ($tagname eq 'input'){
+    my $value = $self->{fdat}->{$attr->{'name'}};
+    # force hidden fields to have a value
+    $value = '' if $attr->{'type'} eq 'hidden' && ! exists $attr->{'value'} && ! defined $value;
+    if (defined($value)){
+      if ($attr->{'type'} =~ /^(text|textfield|hidden|password)$/i){
+	$value = $value->[0] if ref($value) eq 'ARRAY';
+	$attr->{'value'} = $self->escapeHTML($value);
+      } elsif (lc $attr->{'type'} eq 'radio'){
+	$value = $value->[0] if ref($value) eq 'ARRAY';
+	if ($attr->{'value'} eq $value){
+	  $attr->{'checked'} = '__BOOLEAN__';
+	} else {
+	  delete $attr->{'checked'};
 	}
-      }
-    } elsif ($tagname eq 'option'){
-      my $value = $self->{fdat}->{$self->{selectName}};
-      if (defined($value)){
+      } elsif (lc $attr->{'type'} eq 'checkbox'){
 	unless ( ref($value) eq 'ARRAY' ) {
 	  $value = [ $value ];
 	}
-	delete $attr->{selected} if exists $attr->{selected};
+
+	delete $attr->{'checked'}; # Everything is unchecked to start
 
 	foreach my $v ( @$value ) {
 	  if ( $attr->{'value'} eq $v ) {
-	    $attr->{selected} = '__BOOLEAN__';
-          }
+	    $attr->{'checked'} = '__BOOLEAN__';
+	  }
 	}
       }
     }
@@ -125,6 +111,40 @@ sub start {
       }
     }
     $self->{output} .= ">";
+  } elsif ($tagname eq 'option'){
+    my $value = $self->{fdat}->{$self->{selectName}};
+    if (defined($value)){
+      unless ( ref($value) eq 'ARRAY' ) {
+	$value = [ $value ];
+      }
+      delete $attr->{selected} if exists $attr->{selected};
+
+      if($attr->{'value'}){
+        # option tag has value attr - <OPTION VALUE="foo">bar</OPTION>
+	foreach my $v ( @$value ) {
+	  if ( $attr->{'value'} eq $v ) {
+	    $attr->{selected} = '__BOOLEAN__';
+	  }
+        }
+      } else {
+        # option tag has no value attr - <OPTION>bar</OPTION>
+	# save for processing under text handler
+	$self->{option_no_value} = $value;
+      }
+    }
+    $self->{output} .= "<$tagname";
+    while (my ($key, $value) = each %$attr) {
+      if($value eq '__BOOLEAN__'){
+	# boolean attribute
+	$self->{output} .= " $key";
+      } else {
+	$self->{output} .= " $key" . qq(="$value");
+      }
+    }
+    unless ($self->{option_no_value}){
+      # we can close option tag here
+      $self->{output} .= ">";
+    }
   } elsif ($tagname eq 'textarea'){
     if (my $value = $self->{fdat}->{$attr->{'name'}}){
       $value = $value->[0] if ref($value) eq 'ARRAY';
@@ -148,7 +168,21 @@ sub text {
   my ($self, $origtext) = @_;
   # just output text, unless replaced value of <textarea> tag
   unless(exists $self->{outputText} && $self->{outputText} eq 'no'){
-    $self->{output} .= $origtext;
+    if(exists $self->{option_no_value}){
+      # dealing with option tag with no value - <OPTION>bar</OPTION>
+      my $values = $self->{option_no_value};
+      chomp(my $value = $origtext);
+      foreach my $v ( @$values ) {
+	if ( $value eq $v ) {
+        $self->{output} .= " selected";
+        }
+      }
+      # close <OPTION> tag
+      $self->{output} .= ">$origtext";
+      delete $self->{option_no_value};
+    } else {
+      $self->{output} .= $origtext;
+    }
   }
 }
 
@@ -179,31 +213,31 @@ sub escapeHTML {
 # $name attributes to $value
 # when passwd one argument ($name), retrives the value of the $name attribute
 # WARNING: this method is undocumented and MAY GO AWAY
-sub param {
-  my ($self, @p) = @_;
-  unless(@p){
-    return () unless defined($self) && $self->{'.parameters'};
-    return () unless @{$self->{'.parameters'}};
-    return @{$self->{'.parameters'}};
-  }
-  my ($name, $value);
-  if (@p > 1){
-    ($name, $value) = @p;
-    $self->add_parameter($name);
-    $self->{param}->{$name} = $value;
-  } else {
-    $name = $p[0];
-  }
+#sub param {
+#  my ($self, @p) = @_;
+#  unless(@p){
+#    return () unless defined($self) && $self->{'.parameters'};
+#    return () unless @{$self->{'.parameters'}};
+#    return @{$self->{'.parameters'}};
+#  }
+#  my ($name, $value);
+#  if (@p > 1){
+#    ($name, $value) = @p;
+#    $self->add_parameter($name);
+#    $self->{param}->{$name} = $value;
+#  } else {
+#    $name = $p[0];
+#  }
+#
+#  return $self->{param}->{$name};
+#}
 
-  return $self->{param}->{$name};
-}
-
-sub add_parameter {
-  my ($self, $param) = @_;
-  return unless defined $param;
-  push (@{$self->{'.parameters'}},$param)
-    unless defined($self->{$param});
-}
+#sub add_parameter {
+#  my ($self, $param) = @_;
+#  return unless defined $param;
+#  push (@{$self->{'.parameters'}},$param)
+#    unless defined($self->{$param});
+#}
 
 1;
 
@@ -274,14 +308,21 @@ and
 
 =back
 
-=head1 CALLING FROM WEB APPLICATION FRAMEWORKS
+=head1 CALLING FROM OTHER MODULES
 
 =head2 Apache::PageKit
 
 To use HTML::FillInForm in L<Apache::PageKit> is easy.  It is
 automatically called for any page that includes a <form> tag.
 
-=head2 Apache::ASP
+=head2 Apache::ASP v2.09 and above
+
+HTML::FillInForm is now integrated with Apache::ASP.  To activate, use
+
+  PerlSetVar FormFill 1
+  $Response->{FormFill} = 1
+
+=head2 Apache::ASP v2.08 and below
 
 To use HTML::FillInForm, put the following in global.asa
 
@@ -319,7 +360,7 @@ L<HTML::Parser>
 
 =head1 VERSION
 
-This documentation describes HTML::FillInForm module version 0.07.
+This documentation describes HTML::FillInForm module version 0.08.
 
 =head1 BUGS
 
@@ -348,6 +389,7 @@ Fixes, Bug Reports, Docs have been generously provided by:
 
   Patrick Michael Kane
   Tom Lancaster
+  Tatsuhiko Miyagawa
   Paul Lindner
 
 Thanks!
