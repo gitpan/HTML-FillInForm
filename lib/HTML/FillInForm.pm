@@ -71,7 +71,6 @@ sub fill {
 sub start {
   my ($self, $tagname, $attr, $attrseq, $origtext) = @_;
   # HTML::Parser converts tagname to lowercase, so we don't need /i
-#  if ($tagname =~ m/^(input|option)$/){
   if ($tagname eq 'input'){
     my $value = $self->{fdat}->{$attr->{'name'}};
     # force hidden fields to have a value
@@ -148,10 +147,10 @@ sub start {
   } elsif ($tagname eq 'textarea'){
     if (my $value = $self->{fdat}->{$attr->{'name'}}){
       $value = $value->[0] if ref($value) eq 'ARRAY';
-      # <textarea> foobar </textarea> -> <textarea> $value <textarea>
+      # <textarea> foobar </textarea> -> <textarea> $value </textarea>
       # we need to set outputText to 'no' so that 'foobar' won't be printed
       $self->{outputText} = 'no';
-      $self->{output} .= $origtext . $value;
+      $self->{output} .= $origtext . $self->escapeHTML($value);
     } else {
       $self->{output} .= $origtext;
     }

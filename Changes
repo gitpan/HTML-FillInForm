@@ -1,3 +1,7 @@
+0.09 - January 15th 2000
+
+Text in textarea is now escaped.
+
 0.08 - January 15th 2000
 
 Option tags without "value" attribute get filled in correctly.

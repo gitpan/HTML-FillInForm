@@ -11,12 +11,12 @@ print "ok 1\n";
 
 my $hidden_form_in = qq{<TEXTAREA NAME="foo">blah</TEXTAREA>};
 
-my %fdat = (foo => 'bar');
+my %fdat = (foo => 'bar>bar');
 
 my $fif = new HTML::FillInForm;
 my $output = $fif->fill(scalarref => \$hidden_form_in,
 			fdat => \%fdat);
-if ($output eq '<TEXTAREA NAME="foo">bar</TEXTAREA>'){
+if ($output eq '<TEXTAREA NAME="foo">bar&gt;bar</TEXTAREA>'){
 	print "ok 2\n";
 } else {
 	print "Got unexpected out for $hidden_form_in:\n$output\n";
