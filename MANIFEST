@@ -3,4 +3,10 @@ Makefile.PL
 MANIFEST
 lib/HTML/FillInForm.pm
 README
-test.pl
+t/0_base.t
+t/1_form.t
+t/2_hidden.t
+t/3_checkbox.t
+t/4_select.t
+t/5_textarea.t
+t/6_radio.t

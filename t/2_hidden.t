@@ -10,10 +10,10 @@ use HTML::FillInForm;
 print "ok 1\n";
 
 my $hidden_form_in = qq{<input type="hidden" name="foo1">
-<input type="hidden" name="foo2" value="bar2">};
+<input type="hidden" name="foo2" value="ack">};
 
-my %fdat = (foo1a => 'bar1',
-	foo2a => 'bar2');
+my %fdat = (foo1a => 'bar1a',
+	foo2 => ['bar2','bar3']);
 
 my $fif = new HTML::FillInForm;
 my $output = $fif->fill(scalarref => \$hidden_form_in,

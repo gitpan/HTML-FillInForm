@@ -11,7 +11,7 @@ use HTML::Parser 3.08;
 require 5.005;
 
 use vars qw($VERSION @ISA);
-$VERSION = '0.06';
+$VERSION = '0.07';
 @ISA = qw(HTML::Parser);
 
 sub new {
@@ -31,14 +31,14 @@ sub fill {
   my ($self, %option) = @_;
 
   if(my $object = $option{fobject}){
-#    foreach my $object (@objects){
       # make sure objects in 'param_object' parameter support param()
     defined($object->can('param')) or
-      croak("HTML::FillInForm->fillInForm called with fobject option, containing object of type " . ref($object) . " which lacks a param() method!");
-    foreach my $key ($object->param()){
-      $self->{fdat}->{$key} = $object->param($key);
+      croak("HTML::FillInForm->fill called with fobject option, containing object of type " . ref($object) . " which lacks a param() method!");
+    foreach my $k ($object->param()){
+      # we expect param to return an array if there are multiple values
+      my @v = $object->param($k);
+      $self->{fdat}->{$k} = scalar(@v)>1 ? \@v : $v[0];
     }
-#    }
   }
   if (my $fdat = $option{fdat}){
     $self->{fdat} = $fdat;
@@ -77,26 +77,42 @@ sub start {
       $value = '' if $attr->{'type'} eq 'hidden' && ! exists $attr->{'value'} && ! defined $value;
       if (defined($value)){
         if ($attr->{'type'} =~ /^(text|textfield|hidden|password)$/i){
+	  $value = $value->[0] if ref($value) eq 'ARRAY';
 	  $attr->{'value'} = $self->escapeHTML($value);
 	} elsif (lc $attr->{'type'} eq 'radio'){
+	  $value = $value->[0] if ref($value) eq 'ARRAY';
 	  if ($attr->{'value'} eq $value){
 	    $attr->{'checked'} = '__BOOLEAN__';
 	  } else {
 	    delete $attr->{'checked'};
 	  }
 	} elsif (lc $attr->{'type'} eq 'checkbox'){
-	  if ($value){
-	    $attr->{'checked'} = '__BOOLEAN__';
-	  } else {
-	    delete $attr->{'checked'};
+	  unless ( ref($value) eq 'ARRAY' ) {
+	    $value = [ $value ];
+	  }
+
+	  delete $attr->{'checked'}; # Everything is unchecked to start
+
+	  foreach my $v ( @$value ) {
+	    if ( $attr->{'value'} eq $v ) {
+	      $attr->{'checked'} = '__BOOLEAN__';
+	    }
 	  }
 	}
       }
     } elsif ($tagname eq 'option'){
-      if($attr->{'value'} eq $self->{fdat}->{$self->{selectName}}){
-	$attr->{selected} = '__BOOLEAN__';
-      } else {
+      my $value = $self->{fdat}->{$self->{selectName}};
+      if (defined($value)){
+	unless ( ref($value) eq 'ARRAY' ) {
+	  $value = [ $value ];
+	}
 	delete $attr->{selected} if exists $attr->{selected};
+
+	foreach my $v ( @$value ) {
+	  if ( $attr->{'value'} eq $v ) {
+	    $attr->{selected} = '__BOOLEAN__';
+          }
+	}
       }
     }
     $self->{output} .= "<$tagname";
@@ -111,6 +127,7 @@ sub start {
     $self->{output} .= ">";
   } elsif ($tagname eq 'textarea'){
     if (my $value = $self->{fdat}->{$attr->{'name'}}){
+      $value = $value->[0] if ref($value) eq 'ARRAY';
       # <textarea> foobar </textarea> -> <textarea> $value <textarea>
       # we need to set outputText to 'no' so that 'foobar' won't be printed
       $self->{outputText} = 'no';
@@ -161,6 +178,7 @@ sub escapeHTML {
 # when passed two arguments ($name, $value), it sets the value of the 
 # $name attributes to $value
 # when passwd one argument ($name), retrives the value of the $name attribute
+# WARNING: this method is undocumented and MAY GO AWAY
 sub param {
   my ($self, @p) = @_;
   unless(@p){
@@ -236,13 +254,13 @@ To fill in a HTML form contained in a scalar C<$html>:
 
 Returns filled in HTML form contained in C<$html> with data from C<$q>.
 C<$q> is required to have a C<param()> method that works like
-HTML::FillInForm's C<param()>.  A good candidate would be a CGI.pm
-query object. 
+CGI's C<param()>.
 
   $output = $fif->fill(scalarref => \$html,
              fdat => \%fdat);
 
 Returns filled in HTML form contained in C<$html> with data from C<%fdat>.
+To pass multiple values using C<%fdat> use an array reference.
 
 Alternately you can use
 
@@ -261,7 +279,7 @@ and
 =head2 Apache::PageKit
 
 To use HTML::FillInForm in L<Apache::PageKit> is easy.  It is
-automagically called for any page that includes a <form> tag.
+automatically called for any page that includes a <form> tag.
 
 =head2 Apache::ASP
 
@@ -301,7 +319,7 @@ L<HTML::Parser>
 
 =head1 VERSION
 
-This documentation describes HTML::FillInForm module version 0.06.
+This documentation describes HTML::FillInForm module version 0.07.
 
 =head1 BUGS
 
@@ -328,6 +346,7 @@ redistribute it and/or modify it under the same terms as Perl itself.
 
 Fixes, Bug Reports, Docs have been generously provided by:
 
+  Patrick Michael Kane
   Tom Lancaster
   Paul Lindner
 
