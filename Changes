@@ -1,3 +1,7 @@
+0.18 - July 7th 2001
+
+Fix for test on HTML escaping (thanks to Jost Krieger for report)
+
 0.17 - June 29th 2001
 
 Added "fill in target form" feature (Tatsuhiko Miyagawa)

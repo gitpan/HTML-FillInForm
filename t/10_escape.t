@@ -32,8 +32,8 @@ my $output = $fif->fill(scalarref => \$html,
 			fdat => \%fdat);
 
 # FIF changes order of HTML attributes, so split strings and sort
-my $strings_output = join("\n", sort split(/\s/, lc($output)));
-my $strings_html = join("\n", sort split(/\s/, lc($html)));
+my $strings_output = join("\n", sort split(/[\s><]+/, lc($output)));
+my $strings_html = join("\n", sort split(/[\s><]+/, lc($html)));
 
 unless ($strings_output eq $strings_html){
 	print "not ";

@@ -11,7 +11,7 @@ use HTML::Parser 3.08;
 require 5.005;
 
 use vars qw($VERSION @ISA);
-$VERSION = '0.17';
+$VERSION = '0.18';
 @ISA = qw(HTML::Parser);
 
 sub new {
@@ -52,10 +52,6 @@ sub fill {
   if (my $target = $option{target}){
     $self->{'target'} = $target;
   }
-#  # get data set from param() method
-#  foreach my $key ($self->param){
-#    $self->{fdat}->{$key} = $self->param($key);
-#  }
 
   # make sure method has data to fill in HTML form with!
   unless(exists $self->{fdat}){
@@ -252,37 +248,6 @@ sub escapeHTML {
   return $toencode;
 }
 
-# param method - can be called in two forms
-# when passed two arguments ($name, $value), it sets the value of the 
-# $name attributes to $value
-# when passwd one argument ($name), retrives the value of the $name attribute
-# WARNING: this method is undocumented and MAY GO AWAY
-#sub param {
-#  my ($self, @p) = @_;
-#  unless(@p){
-#    return () unless defined($self) && $self->{'.parameters'};
-#    return () unless @{$self->{'.parameters'}};
-#    return @{$self->{'.parameters'}};
-#  }
-#  my ($name, $value);
-#  if (@p > 1){
-#    ($name, $value) = @p;
-#    $self->add_parameter($name);
-#    $self->{param}->{$name} = $value;
-#  } else {
-#    $name = $p[0];
-#  }
-#
-#  return $self->{param}->{$name};
-#}
-
-#sub add_parameter {
-#  my ($self, $param) = @_;
-#  return unless defined $param;
-#  push (@{$self->{'.parameters'}},$param)
-#    unless defined($self->{$param});
-#}
-
 1;
 
 __END__
@@ -384,13 +349,9 @@ HTML::FillInForm is now integrated with Apache::ASP.  To activate, use
   PerlSetVar FormFill 1
   $Response->{FormFill} = 1
 
-=head1 SEE ALSO
-
-L<HTML::Parser>
-
 =head1 VERSION
 
-This documentation describes HTML::FillInForm module version 0.17.
+This documentation describes HTML::FillInForm module version 0.18.
 
 =head1 SECURITY
 
@@ -426,7 +387,7 @@ redistribute it and/or modify it under the same terms as Perl itself.
 
 =head1 SEE ALSO
 
-L<Data::FormValidator>, L<HTML::Template>, L<Apache::PageKit>
+L<HTML::Parser>, L<Data::FormValidator>, L<HTML::Template>, L<Apache::PageKit>
 
 =head1 CREDITS
 
@@ -442,5 +403,6 @@ Fixes, Bug Reports, Docs have been generously provided by:
   Paul Lindner
   Joseph Yanni
   Philip Mak
+  Jost Krieger
 
 Thanks!
