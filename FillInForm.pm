@@ -73,7 +73,7 @@ sub start {
     if ($tag eq 'input'){
       my $value = $self->{fdat}->{$attr->{'name'}};
       # force hidden fields to have a value
-      $value ||= '' if $attr->{'type'} eq 'hidden';
+      $value ||= '' if $attr->{'type'} eq 'hidden' && !$attr->{'value'};
       if (defined($value)){
         if ($attr->{'type'} =~ /^(text|textfield|hidden|password)$/i){
 	  $attr->{'value'} = $self->escapeHTML($value);

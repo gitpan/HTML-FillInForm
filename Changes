@@ -1,3 +1,7 @@
+0.04 - August 10th 2000
+
+Fixed bug with hidden fields
+
 0.03 - August 10th 2000
 
 FillInForm now forces hidden fields to have a value.  So <input type="hidden" name="foo">
