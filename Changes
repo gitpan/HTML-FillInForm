@@ -1,3 +1,12 @@
+0.19 - August 25th 2001
+
+Fixed bug where option values between tags had trailing or leading
+whitespace (Ade Olonoh)
+
+Fixed bug for <input ... /> type tags (Andrew Creer)
+
+Fix for error message (object -> fobject) (Mark Stosberg)
+
 0.18 - July 7th 2001
 
 Fix for test on HTML escaping (thanks to Jost Krieger for report)

@@ -53,8 +53,8 @@ $hidden_form_in = qq{<select multiple name="foo1">
 	<option>bar3</option>
 </select>
 <select multiple name="foo2">
-	<option>bar1</option>
-	<option>bar2</option>
+	<option> bar1</option>
+	<option> bar2</option>
 	<option>bar3</option>
 </select>
 <select multiple name="foo3">
@@ -65,7 +65,7 @@ $hidden_form_in = qq{<select multiple name="foo1">
 <select multiple name="foo4">
 	<option>bar1</option>
 	<option selected>bar2</option>
-	<option>bar3</option>
+	<option>bar3  </option>
 </select>};
 
 $q = new CGI( { foo1 => 'bar1',

@@ -11,7 +11,7 @@ use HTML::Parser 3.08;
 require 5.005;
 
 use vars qw($VERSION @ISA);
-$VERSION = '0.18';
+$VERSION = '0.19';
 @ISA = qw(HTML::Parser);
 
 sub new {
@@ -55,7 +55,7 @@ sub fill {
 
   # make sure method has data to fill in HTML form with!
   unless(exists $self->{fdat}){
-    croak("HTML::FillInForm->fillInForm() called without 'object' or 'fdat' parameter set");
+    croak("HTML::FillInForm->fillInForm() called without 'fobject' or 'fdat' parameter set");
   }
 
   if(my $file = $option{file}){
@@ -138,12 +138,14 @@ sub start {
     $self->{output} .= "<$tagname";
     while (my ($key, $value) = each %$attr) {
       if($value eq '__BOOLEAN__'){
+        next if $key eq '/';
 	# boolean attribute
 	$self->{output} .= " $key";
       } else {
 	$self->{output} .= sprintf qq( %s="%s"), $key, $self->escapeHTML($value);
       }
     }
+    $self->{output} .= '/' if $attr->{'/'};
     $self->{output} .= ">";
   } elsif ($tagname eq 'option'){
     my $value = $self->{fdat}->{$self->{selectName}};
@@ -169,6 +171,7 @@ sub start {
     $self->{output} .= "<$tagname";
     while (my ($key, $value) = each %$attr) {
       if($value eq '__BOOLEAN__'){
+        next if $key eq '/';
 	# boolean attribute
 	$self->{output} .= " $key";
       } else {
@@ -205,7 +208,9 @@ sub text {
     if(exists $self->{option_no_value}){
       # dealing with option tag with no value - <OPTION>bar</OPTION>
       my $values = $self->{option_no_value};
-      chomp(my $value = $origtext);
+      my $value = $origtext;
+      $value =~ s/^\s+//;
+      $value =~ s/\s+$//;
       foreach my $v ( @$values ) {
 	if ( $value eq $self->escapeHTML($v) ) {
 	  $self->{output} .= " selected";
@@ -351,7 +356,7 @@ HTML::FillInForm is now integrated with Apache::ASP.  To activate, use
 
 =head1 VERSION
 
-This documentation describes HTML::FillInForm module version 0.18.
+This documentation describes HTML::FillInForm module version 0.19.
 
 =head1 SECURITY
 
@@ -395,12 +400,13 @@ Fixes, Bug Reports, Docs have been generously provided by:
 
   Tatsuhiko Miyagawa
   Patrick Michael Kane
+  Ade Olonoh
   Tom Lancaster
   Martin H Sluka
-  Jim Miner
-  Ade Olonoh
   Mark Stosberg
+  Jim Miner
   Paul Lindner
+  Andrew Creer
   Joseph Yanni
   Philip Mak
   Jost Krieger
