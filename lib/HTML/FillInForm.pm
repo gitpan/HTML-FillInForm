@@ -12,7 +12,7 @@ use HTML::Parser 3.26;
 require 5.005;
 
 use vars qw($VERSION @ISA);
-$VERSION = '1.04';
+$VERSION = '1.05';
 
 @ISA = qw(HTML::Parser);
 
@@ -323,11 +323,12 @@ __END__
 
 =head1 NAME
 
-HTML::FillInForm - Populates HTML Forms with CGI data.
+HTML::FillInForm - Populates HTML Forms with data.
 
 =head1 DESCRIPTION
 
-This module automatically inserts data from a previous HTML form into the HTML input, textarea and select tags.
+This module automatically inserts data from a previous HTML form into the HTML input, textarea,
+radio buttons, checkboxes and select tags.
 It is a subclass of L<HTML::Parser> and uses it to parse the HTML and insert the values into the form tags.
 
 One useful application is after a user submits an HTML form without filling out a
@@ -346,6 +347,8 @@ in C<$q>.  For example, it will set the value of any "name" textfield to "John S
   my $fif = new HTML::FillInForm;
   my $output = $fif->fill(scalarref => \$html,
 			  fobject => $q);
+
+Note CGI.pm is B<not> required - see using fdat below.  Also you can use a CGI.pm-like object such as Apache::Request.
 
 =head1 METHODS
 
@@ -485,6 +488,9 @@ I wrote this module because I wanted to be able to insert CGI data
 into HTML forms,
 but without combining the HTML and Perl code.  CGI.pm and Embperl allow you so
 insert CGI data into forms, but require that you mix HTML with Perl.
+
+There is a nice review of the module available here:
+http://www.perlmonks.org/index.pl?node_id=274534
 
 =head1 AUTHOR
 

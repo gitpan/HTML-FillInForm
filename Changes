@@ -1,4 +1,11 @@
-1.10 - March 8th, 2004
+1.05 - December 19th, 2004
+
+Added new tests in 19_extra.t (Vsevolod (Simon) Ilyushchenko)
+as part of Phalanx
+
+Make it clearer that doesn't have a CGI.pm dependency.
+
+1.04 - March 8th, 2004
 
 Now queries passed objects for form fields as it encounters them instead of
 asking for all fields up front.  This allows the type of object passed
