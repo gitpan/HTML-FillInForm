@@ -11,7 +11,7 @@ use HTML::Parser 3.08;
 require 5.005;
 
 use vars qw($VERSION @ISA);
-$VERSION = '0.19';
+$VERSION = '0.20';
 @ISA = qw(HTML::Parser);
 
 sub new {
@@ -155,7 +155,7 @@ sub start {
       }
       delete $attr->{selected} if exists $attr->{selected};
 
-      if($attr->{'value'}){
+      if(defined($attr->{'value'})){
         # option tag has value attr - <OPTION VALUE="foo">bar</OPTION>
 	foreach my $v ( @$value ) {
 	  if ( $attr->{'value'} eq $v ) {
@@ -356,7 +356,7 @@ HTML::FillInForm is now integrated with Apache::ASP.  To activate, use
 
 =head1 VERSION
 
-This documentation describes HTML::FillInForm module version 0.19.
+This documentation describes HTML::FillInForm module version 0.20.
 
 =head1 SECURITY
 
@@ -404,6 +404,7 @@ Fixes, Bug Reports, Docs have been generously provided by:
   Tom Lancaster
   Martin H Sluka
   Mark Stosberg
+  Jeff Anderson
   Jim Miner
   Paul Lindner
   Andrew Creer

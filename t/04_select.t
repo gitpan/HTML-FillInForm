@@ -10,7 +10,7 @@ use CGI;
 print "ok 1\n";
 
 my $hidden_form_in = qq{<select multiple name="foo1">
-	<option value="bar1">bar1</option>
+	<option value="0">bar1</option>
 	<option value="bar2">bar2</option>
 	<option value="bar3">bar3</option>
 </select>
@@ -29,7 +29,7 @@ my $hidden_form_in = qq{<select multiple name="foo1">
 	<option selected value="bar2">bar2</option>
 	<option value="bar3">bar3</option>
 </select>};
-my $q = new CGI( { foo1 => 'bar1',
+my $q = new CGI( { foo1 => '0',
            foo2 => ['bar1', 'bar2',],
 	   foo3 => '' }
 	);

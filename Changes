@@ -1,3 +1,7 @@
+0.20 - October 16th 2001
+
+Fixed bug where selected value of '0' were skipped (Jeff Anderson)
+
 0.19 - August 25th 2001
 
 Fixed bug where option values between tags had trailing or leading
