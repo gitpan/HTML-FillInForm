@@ -1,3 +1,7 @@
+0.15 - June 18th 2001
+
+Works with checkbox tags that don't have value attribute.  (Philip Mak)
+
 0.14 - May 17th 2001
 
 Removed warning message for submit tags.  (Joseph Yanni)

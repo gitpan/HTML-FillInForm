@@ -19,11 +19,19 @@ my $hidden_form_in = qq{<input type="checkbox" name="foo1" value="bar1">
 <input type="checkbox" name="foo3" value="bar3">
 <input type="checkbox" name="foo4" value="bar1">
 <input type="checkbox" name="foo4" checked value="bar2">
-<input type="checkbox" name="foo4" value="bar3">};
+<input type="checkbox" name="foo4" value="bar3">
+<input type="checkbox" name="foo5">
+<input type="checkbox" name="foo6">
+<input type="checkbox" name="foo7" checked>
+<input type="checkbox" name="foo8" checked>};
 
 my %fdat = (foo1 => 'bar1',
            foo2 => ['bar1', 'bar2',],
-	   foo3 => '');
+	   foo3 => '',
+	   foo5 => 'on',
+	   foo6 => '',
+	   foo7 => 'on',
+	   foo8 => '');
 
 my $fif = new HTML::FillInForm;
 my $output = $fif->fill(scalarref => \$hidden_form_in,
@@ -31,7 +39,7 @@ my $output = $fif->fill(scalarref => \$hidden_form_in,
 
 my $is_checked = join(" ",map { m/checked/ ? "yes" : "no" } split ("\n",$output));
 
-if ($is_checked eq "yes no no yes yes no no no no no yes no"){
+if ($is_checked eq "yes no no yes yes no no no no no yes no yes no yes no"){
        print "ok 2\n";
 } else {
        print "Got unexpected is_checked for checkboxes:\n$is_checked\n";
