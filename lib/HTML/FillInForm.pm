@@ -149,7 +149,7 @@ sub start {
       $self->{output} .= ">";
     }
   } elsif ($tagname eq 'textarea'){
-    if (my $value = $self->{fdat}->{$attr->{'name'}}){
+    if (defined(my $value = $self->{fdat}->{$attr->{'name'}})){
       $value = $value->[0] if ref($value) eq 'ARRAY';
       # <textarea> foobar </textarea> -> <textarea> $value </textarea>
       # we need to set outputText to 'no' so that 'foobar' won't be printed
@@ -396,6 +396,7 @@ Fixes, Bug Reports, Docs have been generously provided by:
 
   Patrick Michael Kane
   Tom Lancaster
+  Jim Miner
   Ade Olonoh
   Tatsuhiko Miyagawa
   Paul Lindner

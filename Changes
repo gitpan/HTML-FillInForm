@@ -1,3 +1,8 @@
+0.11 - March 16th 2000
+
+Fixed problem when fdat maps the name of a textarea to an
+empty string ('').  Thanks to Jim Miner for the patch!
+
 0.10 - January 19th 2000
 
 Fixed problem with empty option tags (e.g. <select name="x"><option></select>)
@@ -16,7 +21,7 @@ Will not croak anymore if fobject's param method returns undef.
 0.07 - January 5th 2000
 
 Added support for multiple checkboxes and select fields, thanks
-to Patrick Michael Kane for the patch and test script for checkboxes.
+to Patrick Michael Kane for the patch and test script for checkboxes!
 
 0.06 - October 9th 2000
 
