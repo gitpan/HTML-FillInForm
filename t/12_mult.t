@@ -35,4 +35,3 @@ if ($output =~ m/^<input( (type="TEXT"|name="foo1"|value="bar1")){3}>\s*<input( 
 	print "Got unexpected out for $hidden_form_in:\n$output\n";
 	print "not ok 3\n";
 }
-

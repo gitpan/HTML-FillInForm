@@ -5,13 +5,14 @@ use strict; # and no funny business, either.
 
 use Carp; # generate better errors with more context
 
-use HTML::Parser 3.08;
+# required for attr_encoded
+use HTML::Parser 3.26;
 
 # required for UNIVERSAL->can
 require 5.005;
 
 use vars qw($VERSION @ISA);
-$VERSION = '1.00';
+$VERSION = '1.01';
 
 @ISA = qw(HTML::Parser);
 
@@ -19,6 +20,8 @@ sub new {
   my ($class) = @_;
   my $self = bless {}, $class;
   $self->init;
+  # tell HTML::Parser not to decode attributes
+  $self->attr_encoded(1);
   $self->boolean_attribute_value('__BOOLEAN__');
   return $self;
 }
@@ -119,6 +122,7 @@ sub start {
     # force hidden fields to have a value
     $value = '' if exists($attr->{'type'}) && $attr->{'type'} eq 'hidden' && ! exists $attr->{'value'} && ! defined $value;
     if (defined($value)){
+      $value = $self->escapeHTMLStringOrList($value);
       # check for input type, noting that default type is text
       if (!exists $attr->{'type'} ||
 	  $attr->{'type'} =~ /^(text|textfield|hidden|)$/i){
@@ -158,7 +162,7 @@ sub start {
 	# boolean attribute
 	$self->{output} .= " $key";
       } else {
-	$self->{output} .= sprintf qq( %s="%s"), $key, $self->escapeHTML($value);
+	$self->{output} .= sprintf qq( %s="%s"), $key, $value;
       }
     }
     # extra space put here to work around Opera 6.01/6.02 bug
@@ -167,6 +171,7 @@ sub start {
   } elsif ($tagname eq 'option'){
     my $value = $self->{fdat}->{$self->{selectName}};
     if (defined($value)){
+      $value = $self->escapeHTMLStringOrList($value);
       $value = [ $value ] unless ( ref($value) eq 'ARRAY' );
       delete $attr->{selected} if exists $attr->{selected};
 
@@ -190,7 +195,7 @@ sub start {
 	# boolean attribute
 	$self->{output} .= " $key";
       } else {
-	$self->{output} .= sprintf qq( %s="%s"), $key, $self->escapeHTML($value);
+	$self->{output} .= sprintf qq( %s="%s"), $key, $value;
       }
     }
     unless ($self->{option_no_value}){
@@ -199,11 +204,12 @@ sub start {
     }
   } elsif ($tagname eq 'textarea'){
     if (defined(my $value = $self->{fdat}->{$attr->{'name'}})){
+      $value = $self->escapeHTMLStringOrList($value);
       $value = (shift @$value || '') if ref($value) eq 'ARRAY';
       # <textarea> foobar </textarea> -> <textarea> $value </textarea>
       # we need to set outputText to 'no' so that 'foobar' won't be printed
       $self->{outputText} = 'no';
-      $self->{output} .= $origtext . $self->escapeHTML($value);
+      $self->{output} .= $origtext . $value;
     } else {
       $self->{output} .= $origtext;
     }
@@ -227,7 +233,7 @@ sub text {
       $value =~ s/^\s+//;
       $value =~ s/\s+$//;
       foreach my $v ( @$values ) {
-	if ( $value eq $self->escapeHTML($v) ) {
+	if ( $value eq $v ) {
 	  $self->{output} .= " selected";
         }
       }
@@ -255,6 +261,19 @@ sub end {
     delete $self->{'current_form'};
   }
   $self->{output} .= $origtext;
+}
+
+sub escapeHTMLStringOrList {
+  my ($self, $toencode) = @_;
+
+  if (ref($toencode) eq 'ARRAY') {
+    foreach my $elem (@$toencode) {
+      $elem = $self->escapeHTML($elem);
+    }
+    return $toencode;
+  } else {
+    return $self->escapeHTML($toencode);
+  }
 }
 
 sub escapeHTML {
@@ -394,9 +413,15 @@ HTML::FillInForm is now integrated with Apache::ASP.  To activate, use
   PerlSetVar FormFill 1
   $Response->{FormFill} = 1
 
+=head2 HTML::Mason
+
+Using HTML::FillInForm from HTML::Mason is covered in the FAQ on
+the masonhq.com website at
+L<http://www.masonhq.com/docs/faq/#how_can_i_integrate_html_fillin>
+
 =head1 VERSION
 
-This documentation describes HTML::FillInForm module version 1.00.
+This documentation describes HTML::FillInForm module version 1.01.
 
 =head1 SECURITY
 
@@ -410,13 +435,19 @@ can control this by setting the Expires header.  For example, use
 C<-expires> in L<CGI.pm> or set C<browser_cache> to I<no> in 
 Config.xml file of L<Apache::PageKit>.
 
+=head1 TRANSLATION
+
+Kato Atsushi has translated these docs into Japanese, available from
+
+http://perldoc.jp
+
 =head1 BUGS
 
-Please submit any bug reports to tjmather@tjmather.com.
+Please submit any bug reports to tjmather@maxmind.com.
 
 =head1 NOTES
 
-Requires Perl 5.005 and L<HTML::Parser> version 3.08.
+Requires Perl 5.005 and L<HTML::Parser> version 3.26.
 
 I wrote this module because I wanted to be able to insert CGI data
 into HTML forms,
@@ -425,10 +456,13 @@ insert CGI data into forms, but require that you mix HTML with Perl.
 
 =head1 AUTHOR
 
-(c) 2002 Thomas J. Mather, tjmather@tjmather.com
+(c) 2002 Thomas J. Mather, tjmather@maxmind.com
 
 All rights reserved. This package is free software; you can
 redistribute it and/or modify it under the same terms as Perl itself.
+
+Paid support is available from directly from the author of this package.
+Please see L<http://www.maxmind.com/app/opensourceservices> for more details.
 
 =head1 SEE ALSO
 
@@ -445,6 +479,7 @@ Fixes, Bug Reports, Docs have been generously provided by:
   Tom Lancaster
   Martin H Sluka
   Mark Stosberg
+  Jonathan Swartz
   Trevor Schellhorn
   Jim Miner
   Paul Lindner

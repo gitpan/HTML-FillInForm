@@ -1,3 +1,8 @@
+1.01 - December 31st 2002
+
+Fixed issue with HTML::Parser decoding high-bit entities, by setting
+attr_encoded option, now requires HTML::Parser > 3.26.  (Jonathan Swartz)
+
 1.00 - August 28th 2002
 
 Workaround for Opera 6.01/02 bug with selected radio boxes -
