@@ -1,0 +1,8 @@
+0.02 - June ???
+
+Fixed bug with option tags.  Now displays all 'option' tag attributes, in addition to selected and value.
+Better support for boolean attributes.
+
+0.01 - June 18th 2000
+
+Initial Release of Module.

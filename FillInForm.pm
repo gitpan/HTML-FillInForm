@@ -11,13 +11,14 @@ use HTML::Parser 3;
 require 5.005;
 
 use vars qw($VERSION @ISA);
-$VERSION = '0.01';
+$VERSION = '0.02';
 @ISA = qw(HTML::Parser);
 
 sub new {
   my ($class) = @_;
   my $self = bless {}, $class;
   $self->init;
+  $self->boolean_attribute_value('__BOOLEAN__');
   return $self;
 }
 
@@ -28,6 +29,7 @@ sub fill_scalarref { my $self = shift; return $self->fill('scalarref',@_); }
 
 sub fill {
   my ($self, %option) = @_;
+
   if(my $object = $option{fobject}){
 #    foreach my $object (@objects){
       # make sure objects in 'param_object' parameter support param()
@@ -68,25 +70,33 @@ sub fill {
 # handles opening HTML tags such as <input ...>
 sub start {
   my ($self, $tag, $attr, $attrseq, $origtext) = @_;
-  if ($tag eq 'input'){
-    if (my $value = $self->{fdat}->{$attr->{'name'}}){
-      if ($attr->{'type'} =~ /^(text|textfield|hidden|password)$/){
-	$attr->{'value'} = $self->escapeHTML($value);
-      } elsif ($attr->{'type'} eq 'radio'){
-	if ($attr->{'value'} eq $value){
-	  $attr->{'checked'} = 'checked';
-	} else {
-	  delete $attr->{'checked'};
+  if ($tag =~ m/^(input|option)$/){
+    if ($tag eq 'input'){
+      if (my $value = $self->{fdat}->{$attr->{'name'}}){
+	if ($attr->{'type'} =~ /^(text|textfield|hidden|password)$/){
+	  $attr->{'value'} = $self->escapeHTML($value);
+	} elsif ($attr->{'type'} eq 'radio'){
+	  if ($attr->{'value'} eq $value){
+	    $attr->{'checked'} = '__BOOLEAN__';
+	  } else {
+	    delete $attr->{'checked'};
+	  }
 	}
       }
-    }
-    $self->{output} .= "<input ";
-    foreach my $key (keys %$attr) {
-      if($key =~ m/^(checked)$/){
-	# boolean attribute
-	$self->{output} .= "$key ";
+    } elsif ($tag eq 'option'){
+      if($attr->{'value'} eq $self->{fdat}->{$self->{selectName}}){
+	$attr->{selected} = '__BOOLEAN__';
       } else {
-	$self->{output} .= $key . qq(="$attr->{$key}" );
+	delete $attr->{selected} if exists $attr->{selected};
+      }
+    }
+    $self->{output} .= "<$tag";
+    foreach my $key (keys %$attr) {
+      if($attr->{$key} eq '__BOOLEAN__'){
+	# boolean attribute
+	$self->{output} .= " $key";
+      } else {
+	$self->{output} .= " $key" . qq(="$attr->{$key}");
       }
     }
     $self->{output} .= ">";
@@ -102,12 +112,6 @@ sub start {
   } elsif ($tag eq 'select'){
     $self->{selectName} = $attr->{'name'};
     $self->{output} .= $origtext;
-  } elsif ($tag eq 'option'){
-    if($attr->{'value'} eq $self->{fdat}->{$self->{selectName}}){
-      $self->{output} .= qq{<option selected value="} . $attr->{value} . qq{">};
-    } else {
-      $self->{output} .= qq{<option value="} . $attr->{value} . qq{">};
-    }
   } else {
     $self->{output} .= $origtext;
   }
@@ -184,7 +188,7 @@ HTML::FillInForm - Populates HTML Forms with CGI data.
 
 =head1 DESCRIPTION
 
-This module automatically inserts data from a previous HTML form into the HTML input and select tags.
+This module automatically inserts data from a previous HTML form into the HTML input, textarea and select tags.
 It is a subclass of L<HTML::Parser> and uses it to parse the HTML and insert the values into the form tags.
 
 One useful application is after a user submits an HTML form without filling out
@@ -249,7 +253,7 @@ L<HTML::Parser>
 
 =head1 VERSION
 
-This documenation describes HTML::FillInForm module version 0.01.
+This documenation describes HTML::FillInForm module version 0.02.
 
 =head1 BUGS
 
@@ -257,6 +261,8 @@ This module has not been tested extensively.  Please submit
 and bug reports to tjmather@alumni.princeton.edu.
 
 =head1 NOTES
+
+Requires Perl 5.005 and L<HTML::Parser> version 3.
 
 I wrote this module because I wanted to be able to insert CGI data into HTML forms,
 but without combining the HTML and Perl code.  CGI.pm and Embperl allow you so
