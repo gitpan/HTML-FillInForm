@@ -11,7 +11,7 @@ use HTML::Parser 3.08;
 require 5.005;
 
 use vars qw($VERSION @ISA);
-$VERSION = '0.08';
+$VERSION = '0.10';
 @ISA = qw(HTML::Parser);
 
 sub new {
@@ -71,6 +71,10 @@ sub fill {
 sub start {
   my ($self, $tagname, $attr, $attrseq, $origtext) = @_;
   # HTML::Parser converts tagname to lowercase, so we don't need /i
+  if ($self->{option_no_value}) {
+    $self->{output} .= '>';
+    delete $self->{option_no_value};
+  } 
   if ($tagname eq 'input'){
     my $value = $self->{fdat}->{$attr->{'name'}};
     # force hidden fields to have a value
@@ -188,6 +192,10 @@ sub text {
 # handles closing HTML tags such as </textarea>
 sub end {
   my ($self, $tagname, $origtext) = @_;
+  if ($self->{option_no_value}) {
+    $self->{output} .= '>';
+    delete $self->{option_no_value};
+  }
   if($tagname eq 'select'){
     delete $self->{selectName};
   } elsif ($tagname eq 'textarea'){
@@ -359,7 +367,7 @@ L<HTML::Parser>
 
 =head1 VERSION
 
-This documentation describes HTML::FillInForm module version 0.08.
+This documentation describes HTML::FillInForm module version 0.10.
 
 =head1 BUGS
 
@@ -388,6 +396,7 @@ Fixes, Bug Reports, Docs have been generously provided by:
 
   Patrick Michael Kane
   Tom Lancaster
+  Ade Olonoh
   Tatsuhiko Miyagawa
   Paul Lindner
 

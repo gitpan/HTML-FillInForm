@@ -1,3 +1,8 @@
+0.10 - January 19th 2000
+
+Fixed problem with empty option tags (e.g. <select name="x"><option></select>)
+Thanks to Ade Olonoh for the patch!
+
 0.09 - January 15th 2000
 
 Text in textarea is now escaped.
