@@ -12,7 +12,7 @@ use HTML::Parser 3.26;
 require 5.005;
 
 use vars qw($VERSION @ISA);
-$VERSION = '1.05';
+$VERSION = '1.06';
 
 @ISA = qw(HTML::Parser);
 
@@ -173,13 +173,26 @@ sub start {
       $value = $self->escapeHTMLStringOrList($value);
       $value = [ $value ] unless ( ref($value) eq 'ARRAY' );
       delete $attr->{selected} if exists $attr->{selected};
-
+      
       if(defined($attr->{'value'})){
         # option tag has value attr - <OPTION VALUE="foo">bar</OPTION>
-	foreach my $v ( @$value ) {
-	  if ( $attr->{'value'} eq $v ) {
-	    $attr->{selected} = 'selected';
-	  }
+        
+        if ($self->{selectMultiple}){
+          # check if the option tag belongs to a multiple option select
+	  foreach my $v ( @$value ) {
+	    if ( $attr->{'value'} eq $v ){
+	      $attr->{selected} = 'selected';
+	    }
+          }
+        } else {
+          # if not every value of a fdat ARRAY belongs to a different select tag
+          if (not $self->{selectSelected}){
+	    if ( $attr->{'value'} eq $value->[0]){
+	      shift @$value if ref($value) eq 'ARRAY';
+	      $attr->{selected} = 'selected';
+              $self->{selectSelected} = 1; # remeber that an option tag is selected for this select tag
+	    }
+          }
         }
       } else {
         # option tag has no value attr - <OPTION>bar</OPTION>
@@ -208,6 +221,12 @@ sub start {
     }
   } elsif ($tagname eq 'select'){
     $self->{selectName} = $attr->{'name'};
+    if (defined $attr->{'multiple'}){
+      $self->{selectMultiple} = 1; # helper var to remember if the select tag has the multiple attr set or not
+    } else {
+      $self->{selectMultiple} = 0;
+      $self->{selectSelected} = 0; # helper var to remember if an option was already selected in the current select tag
+    }
     $self->{output} .= $origtext;
   } else {
     $self->{output} .= $origtext;
@@ -452,11 +471,11 @@ HTML::FillInForm is now integrated with Apache::ASP.  To activate, use
 
 Using HTML::FillInForm from HTML::Mason is covered in the FAQ on
 the masonhq.com website at
-L<http://www.masonhq.com/docs/faq/#how_can_i_integrate_html_fillin>
+L<http://www.masonhq.com/?FAQ:HTTPAndHTML#h-how_can_i_populate_form_values_automatically_>
 
 =head1 VERSION
 
-This documentation describes HTML::FillInForm module version 1.04.
+This documentation describes HTML::FillInForm module version 1.06.
 
 =head1 SECURITY
 
@@ -490,17 +509,14 @@ but without combining the HTML and Perl code.  CGI.pm and Embperl allow you so
 insert CGI data into forms, but require that you mix HTML with Perl.
 
 There is a nice review of the module available here:
-http://www.perlmonks.org/index.pl?node_id=274534
+L<http://www.perlmonks.org/index.pl?node_id=274534>
 
 =head1 AUTHOR
 
-(c) 2004 TJ Mather, Maxmind LLC, tjmather@maxmind.com
+(c) 2005 TJ Mather, tjmather@maxmind.com, L<http://www.maxmind.com/>
 
 All rights reserved. This package is free software; you can
 redistribute it and/or modify it under the same terms as Perl itself.
-
-Paid support is available from directly from the author of this package.
-Please see L<http://www.maxmind.com/app/opensourceservices> for more details.
 
 =head1 SEE ALSO
 

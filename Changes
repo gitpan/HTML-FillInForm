@@ -1,3 +1,9 @@
+1.06 - October 13th, 2005
+
+Distinguish between selects with and without the multiple attribute set (Alexander Hartmaier)
+
+Added warnings to PREREQ_PM
+
 1.05 - December 19th, 2004
 
 Added new tests in 19_extra.t (Vsevolod (Simon) Ilyushchenko)
