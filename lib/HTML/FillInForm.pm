@@ -12,7 +12,7 @@ use HTML::Parser 3.26;
 require 5.005;
 
 use vars qw($VERSION @ISA);
-$VERSION = '1.06';
+$VERSION = '1.07';
 
 @ISA = qw(HTML::Parser);
 
@@ -38,9 +38,15 @@ sub fill {
     ? @{ $option{ignore_fields} } : $option{ignore_fields} if exists( $option{ignore_fields} );
   $self->{ignore_fields} = \%ignore_fields;
 
+  my %disable_fields;
+  %disable_fields = map { $_ => 1 } ( ref $option{'disable_fields'} eq 'ARRAY' )
+    ? @{ $option{disable_fields} } : $option{ignore_fields} if exists( $option{disable_fields} );
+  $self->{disable_fields} = \%disable_fields;
+
   if (my $fdat = $option{fdat}){
     # Copy the structure to prevent side-effects.
     my %copy;
+    keys %$fdat; # reset fdat if each or Dumper was called on fdat
     while(my($key, $val) = each %$fdat) {
       next if exists $ignore_fields{$key};
       $copy{ $key } = ref $val eq 'ARRAY' ? [ @$val ] : $val;
@@ -89,6 +95,8 @@ sub fill {
       $self->parse($_);
     }
   }
+
+  $self->eof;
   return delete $self->{output};
 }
 
@@ -120,6 +128,13 @@ sub start {
     $self->{output} .= '>';
     delete $self->{option_no_value};
   }
+
+  # Check if we need to disable  this field
+  $attr->{disable} = 1
+    if exists $attr->{'name'} and
+    exists $self->{disable_fields}{ $attr->{'name'} } and
+    $self->{disable_fields}{ $attr->{'name'} } and
+    not ( exists $attr->{disable} and $attr->{disable} );
   if ($tagname eq 'input'){
     my $value = exists $attr->{'name'} ? $self->_get_param($attr->{'name'}) : undef;
     # force hidden fields to have a value
@@ -129,13 +144,22 @@ sub start {
       # check for input type, noting that default type is text
       if (!exists $attr->{'type'} ||
 	  $attr->{'type'} =~ /^(text|textfield|hidden|)$/i){
-	$value = (shift @$value || '') if ref($value) eq 'ARRAY';
+	if ( ref($value) eq 'ARRAY' ) {
+	  $value = shift @$value;
+	  $value = '' unless defined $value;
+        }
 	$attr->{'value'} = $value;
       } elsif (lc $attr->{'type'} eq 'password' && $self->{fill_password}) {
-	$value = (shift @$value || '') if ref($value) eq 'ARRAY';
+	if ( ref($value) eq 'ARRAY' ) {
+	  $value = shift @$value;
+	  $value = '' unless defined $value;
+        }
 	$attr->{'value'} = $value;
       } elsif (lc $attr->{'type'} eq 'radio'){
-	$value = ($value->[0] || '') if ref($value) eq 'ARRAY';
+	if ( ref($value) eq 'ARRAY' ) {
+	  $value = $value->[0];
+	  $value = '' unless defined $value;
+        }
 	# value for radio boxes default to 'on', works with netscape
 	$attr->{'value'} = 'on' unless exists $attr->{'value'};
 	if ($attr->{'value'} eq $value){
@@ -168,10 +192,10 @@ sub start {
     $self->{output} .= ">";
   } elsif ($tagname eq 'option'){
     my $value = $self->_get_param($self->{selectName});
+    $value = [ $value ] unless ( ref($value) eq 'ARRAY' );
 
-    if (defined($value)){
+    if ( defined $value->[0] ){
       $value = $self->escapeHTMLStringOrList($value);
-      $value = [ $value ] unless ( ref($value) eq 'ARRAY' );
       delete $attr->{selected} if exists $attr->{selected};
       
       if(defined($attr->{'value'})){
@@ -179,7 +203,7 @@ sub start {
         
         if ($self->{selectMultiple}){
           # check if the option tag belongs to a multiple option select
-	  foreach my $v ( @$value ) {
+	  foreach my $v ( grep { defined } @$value ) {
 	    if ( $attr->{'value'} eq $v ){
 	      $attr->{selected} = 'selected';
 	    }
@@ -322,8 +346,25 @@ sub escapeHTML {
 }
 
 sub comment {
-  my ( $self, $text ) = @_;
-  $self->{output} .= '<!--' . $text . '-->';
+    my ( $self, $text ) = @_;
+    # if it begins with '[if ' and doesn't end with '<![endif]'
+    # it's a "downlevel-revealed" conditional comment (stupid IE)
+    # or
+    # if it ends with '[endif]' then it's the end of a
+    # "downlevel-revealed" conditional comment
+    if(
+        (
+            ( index($text, '[if ') == 0 )
+            &&
+            ( $text !~ /<!\[endif\]$/ )
+        )
+        ||
+        ( $text eq '[endif]' )
+    ) {
+        $self->{output} .= '<!' . $text . '>';
+    } else {
+        $self->{output} .= '<!--' . $text . '-->';
+    }
 }
 
 sub process {
@@ -434,6 +475,12 @@ To disable the filling of some fields, use the C<ignore_fields> option:
   $output = $fif->fill(scalarref => \$html,
                        fobject => $q,
                        ignore_fields => ['prev','next']);
+
+To disable the form from being edited, use the C<disable_fields> options:
+
+  $output = $fif->fill(scalarref => \$html,
+                       fobject => $q,
+                       disable_fields => [ 'uid', 'gid' ]);
 
 Note that this module does not clear fields if you set the value to undef.
 It will clear fields if you set the value to an empty array or an empty string.  For example:
@@ -547,5 +594,11 @@ Fixes, Bug Reports, Docs have been generously provided by:
   Bill Moseley
   James Tolley
   Dan Kubb
+  Alexander Hartmaier
+  Paul Miller
+  Anthony Ettinger
+  Simon P. Ditner
+  Michael Peters
+  Trevor Schellhorn
 
 Thanks!

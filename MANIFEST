@@ -23,5 +23,8 @@ t/16_ignore_fields.t
 t/17_xhtml.t
 t/18_ignore_fdat.t
 t/19_extra.t
+t/20_scalarref.t
+t/21_disable_fields.t
+t/22_undef.t
 t/data/form1.html
 META.yml                                 Module meta-data (added by MakeMaker)

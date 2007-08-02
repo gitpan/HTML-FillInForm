@@ -1,3 +1,22 @@
+1.07 - August 2nd, 2007
+
+Added 'disable_fields' method [rt.cpan.org #6342] (Trevor Schellhorn)
+
+Support IE down-level revealed HTML comments [rt.cpan.org #19468] (Michael Peters)
+
+hash is not reset before each() is called [rt.cpan.org #24980] (Simon P. Ditner)
+
+Fix a bug the last plaintext part might be chopped if called via
+scalarref [rt.cpan.org #21750] (Tatsuhiko Miyagawa)
+
+Add support for ID attribute on form tags (name attribute is
+deprecated in xhtml) [rt.cpan.org #27376] (Anthony Ettinger)
+
+Fix bug when passing 0 in array ref to textfields, also see
+[rt.cpan.org #22195] (Paul Miller)
+
+No longer generate warning if empty array as the value for a select attribute is passed (Dave Rolsky)
+
 1.06 - October 13th, 2005
 
 Distinguish between selects with and without the multiple attribute set (Alexander Hartmaier)
