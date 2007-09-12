@@ -1,8 +1,8 @@
 # -*- Mode: Perl; -*-
 
+use Test::More 'no_plan';
 use strict;
 
-print "1..1\n";
 use HTML::FillInForm;
  
 my $html =<<"__HTML__";
@@ -29,16 +29,11 @@ __HTML__
 
 my %fdat = ();
 
-my $fif = HTML::FillInForm->new;
-my $output = $fif->fill(scalarref => \$html,
-			fdat => \%fdat);
+my $output = HTML::FillInForm->fill( \$html, \%fdat);
 
 # FIF changes order of HTML attributes, so split strings and sort
 my $strings_output = join("\n", sort split(/[\s><]+/, lc($output)));
 my $strings_html = join("\n", sort split(/[\s><]+/, lc($html)));
 
-unless ($strings_output eq $strings_html){
-	print "not ";
-}
-print "ok 1";
+is($strings_output,$strings_html);
 

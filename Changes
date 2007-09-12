@@ -1,3 +1,30 @@
+2.0 - September 11th, 2007
+
+Allow passing an arrayref of hashrefs through fdat (Mark Stosberg, Michael Graham)
+
+Several new shortcuts: (Mark Stosberg)
+    Allow calling fill() as a class method as a shortcut.
+    Allow   \$html  as shortcut for   scalarref => \$html
+    Allow   \@html  as shortcut for   arrayref  => \@html
+    Allow   \*html  as shortcut for   file      => \*html
+    Allow   'html'  as shortcut for   file      => 'html'
+    Allow   $q      as shortcut for   fobject   => $q
+    Allow  \%fdat   as shortcut for   fdat      => \%fdat
+
+    In summary, instead of this:
+
+    my $fif = HTML::FillInForm->new;
+    $fif->fill( scalarref => \$html, fdat => \%data );
+
+    You can simply write:
+
+    HTML::FillInForm->fill( \$html, \%data );
+
+Fixed disable_fields bug (Boris Zentner)
+
+Add support for ID attribute on form tags (name attribute is
+deprecated in xhtml) [rt.cpan.org #27376] (Anthony Ettinger)
+
 1.07 - August 2nd, 2007
 
 Added 'disable_fields' method [rt.cpan.org #6342] (Trevor Schellhorn)
@@ -8,9 +35,6 @@ hash is not reset before each() is called [rt.cpan.org #24980] (Simon P. Ditner)
 
 Fix a bug the last plaintext part might be chopped if called via
 scalarref [rt.cpan.org #21750] (Tatsuhiko Miyagawa)
-
-Add support for ID attribute on form tags (name attribute is
-deprecated in xhtml) [rt.cpan.org #27376] (Anthony Ettinger)
 
 Fix bug when passing 0 in array ref to textfields, also see
 [rt.cpan.org #22195] (Paul Miller)

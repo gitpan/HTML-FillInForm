@@ -12,7 +12,7 @@ use HTML::Parser 3.26;
 require 5.005;
 
 use vars qw($VERSION @ISA);
-$VERSION = '1.07';
+$VERSION = '2.00';
 
 @ISA = qw(HTML::Parser);
 
@@ -26,12 +26,97 @@ sub new {
 }
 
 # a few shortcuts to fill()
-sub fill_file { my $self = shift; return $self->fill('file',@_); }
-sub fill_arrayref { my $self = shift; return $self->fill('arrayref',@_); }
+sub fill_file      { my $self = shift; return $self->fill('file'     ,@_); }
+sub fill_arrayref  { my $self = shift; return $self->fill('arrayref' ,@_); }
 sub fill_scalarref { my $self = shift; return $self->fill('scalarref',@_); }
 
+# track the keys we support. Useful for file-name detection.
+sub _known_keys {
+    return {
+        scalarref      =>  1,
+        arrayref       =>  1,
+        fdat           =>  1,
+        fobject        =>  1,
+        file           =>  1,
+        target         =>  1,
+        fill_password  =>  1,
+        ignore_fields  =>  1,
+        disable_fields =>  1,
+    }
+}
+
 sub fill {
-  my ($self, %option) = @_;
+   my $self = shift;
+
+  # If we are called as a class method, go ahead and call new().
+  $self = $self->new if (not ref $self);
+
+  my %option;
+
+  # If the first arg is a scalarref, translate that to scalarref => $first_arg
+  if (ref $_[0] eq 'SCALAR') {
+      $option{scalarref} = shift;
+  }
+  elsif (ref $_[0] eq 'ARRAY') {
+      $option{arrayref} = shift;
+  }
+  elsif (ref $_[0] eq 'GLOB') {
+      $option{file} = shift;
+  }
+  elsif (ref $_[0]) {
+    croak "data source is not a reference type we understand";
+  }
+  # Last chance, if the first arg isn't one of the known keys, we 
+  # assume it is a file name.
+  elsif (not _known_keys()->{$_[0]} )  {
+    $option{file} =  shift;
+  }
+  else {
+      # Should be a known key. Nothing to do.
+  }
+
+
+  # Now, check to see if the next arg is also a reference. 
+  my $data;
+  if (ref $_[0]) {
+      $data = shift;
+      $data = [$data] unless ref $data eq 'ARRAY';
+
+      for my $source (@$data) {
+          if (ref $source eq 'HASH') {
+              push @{ $option{fdat} }, $source;
+          }
+          elsif (ref $source) {
+              if ($source->can('param')) {
+                  push @{ $option{fobject} }, $source;
+              }
+              else {
+                  croak "data source $source does not supply a param method";
+              }
+          }
+          elsif (defined $source) {
+              croak "data source $source is not a hash or object reference";
+          }
+      }
+
+  }
+
+ 
+  # load in the rest of the options
+  %option = (%option, @_);
+
+
+  # As suggested in the docs, merge multiple fdats into one. 
+  if (ref $option{fdat} eq 'ARRAY') {
+      my %merged;
+      for my $hash (@{ $option{fdat} }) {
+          for my $key (keys %$hash) {
+              $merged{$key} = $hash->{$key};
+          }
+      }
+      $option{'fdat'} = \%merged;
+  }
+
 
   my %ignore_fields;
   %ignore_fields = map { $_ => 1 } ( ref $option{'ignore_fields'} eq 'ARRAY' )
@@ -40,7 +125,7 @@ sub fill {
 
   my %disable_fields;
   %disable_fields = map { $_ => 1 } ( ref $option{'disable_fields'} eq 'ARRAY' )
-    ? @{ $option{disable_fields} } : $option{ignore_fields} if exists( $option{disable_fields} );
+    ? @{ $option{disable_fields} } : $option{disable_fields} if exists( $option{disable_fields} );
   $self->{disable_fields} = \%disable_fields;
 
   if (my $fdat = $option{fdat}){
@@ -107,8 +192,8 @@ sub start {
   # set the current form
   if ($tagname eq 'form') {
     $self->{object_param_cache} = {};
-    if (exists $attr->{'name'}) {
-      $self->{'current_form'} = $attr->{'name'};
+    if (exists $attr->{'name'} || exists $attr->{'id'}) {
+      $self->{'current_form'} = $attr->{'name'} || $attr->{'id'};
     } else {
       # in case of previous one without </FORM>
       delete $self->{'current_form'};
@@ -387,116 +472,121 @@ HTML::FillInForm - Populates HTML Forms with data.
 
 =head1 DESCRIPTION
 
-This module automatically inserts data from a previous HTML form into the HTML input, textarea,
-radio buttons, checkboxes and select tags.
-It is a subclass of L<HTML::Parser> and uses it to parse the HTML and insert the values into the form tags.
+This module fills in an HTML form with data from a Perl data structure, allowing you
+to keep the HTML and Perl separate.
 
-One useful application is after a user submits an HTML form without filling out a
-required field.  HTML::FillInForm can be used to redisplay the HTML form
-with all the form elements containing the submitted info.
+Here are two common use cases:
+
+1. A user submits an HTML form without filling out a required field.  You want
+to redisplay the form with all the previous data in it, to make it easy for the
+user to see and correct the error. 
+
+2. You have just retrieved a record from a database and need to display it in
+an HTML form.
 
 =head1 SYNOPSIS
 
-This examples fills data into a HTML form stored in C<$htmlForm> from CGI parameters that are stored
-in C<$q>.  For example, it will set the value of any "name" textfield to "John Smith".
+Fill HTML form with data.
 
-  my $q = new CGI;
+  $output = HTML::FillInForm->fill( \$html,   $q );
+  $output = HTML::FillInForm->fill( \@html,   [$q1,$q2] );
+  $output = HTML::FillInForm->fill( \*HTML,   \%data );
+  $output = HTML::FillInForm->fill( 't.html', [\%data1,%data2] );
 
-  $q->param("name","John Smith");
+The HTML can be provided as a scalarref, arrayref, filehandle or file.  The data can come from one or more
+hashrefs, or objects which support a param() method, like CGI.pm, L<Apache::Request|Apache::Request>, etc. 
 
-  my $fif = new HTML::FillInForm;
-  my $output = $fif->fill(scalarref => \$html,
-			  fobject => $q);
+=head1 fill
 
-Note CGI.pm is B<not> required - see using fdat below.  Also you can use a CGI.pm-like object such as Apache::Request.
+The basic syntax is seen above the Synopsis. There are a few additional options.
 
-=head1 METHODS
+=head2 Options
 
-=over 4
+=head3  target => 'form1'
 
-=item new
+Suppose you have multiple forms in a html file and only want to fill in one.
 
-Call C<new()> to create a new FillInForm object:
-
-  $fif = new HTML::FillInForm;
-
-=item fill
-
-To fill in a HTML form contained in a scalar C<$html>:
-
-  $output = $fif->fill(scalarref => \$html,
-             fobject => $q);
-
-Returns filled in HTML form contained in C<$html> with data from C<$q>.
-C<$q> is required to have a C<param()> method that works like
-CGI's C<param()>.
-
-  $output = $fif->fill(scalarref => \$html,
-             fobject => [$q1, $q2]);
-
-As of 1.04 the object passed does not need to return all its keys with
-a empty param() call.
-
-Note that you can pass multiple objects as an array reference.
-
-  $output = $fif->fill(scalarref => \$html,
-             fdat => \%fdat);
-
-Returns filled in HTML form contained in C<$html> with data from C<%fdat>.
-To pass multiple values using C<%fdat> use an array reference.
-
-Alternately you can use
-
-  $output = $fif->fill(arrayref => \@array_of_lines,
-             fobject => $q);
-
-and
-
-  $output = $fif->fill(file => 'form.tmpl',
-             fobject => $q);
-
-Suppose you have multiple forms in a html and among them there is only
-one form you want to fill in, specify target.
-
-  $output = $fif->fill(scalarref => \$html,
-                       fobject => $q,
-                       target => 'form1');
+  $output = HTML::FillInForm->fill(\$html, $q, target => 'form1');
 
 This will fill in only the form inside
 
   <FORM name="form1"> ... </FORM>
 
-Note that this method fills in password fields by default.  To disable, pass
+=head3 fill_password => 0
+
+Passwords are filled in by default. To disable:
 
   fill_password => 0
 
-To disable the filling of some fields, use the C<ignore_fields> option:
+=head3 ignore_fields => []
 
-  $output = $fif->fill(scalarref => \$html,
-                       fobject => $q,
-                       ignore_fields => ['prev','next']);
+To disable the filling of some fields:
 
-To disable the form from being edited, use the C<disable_fields> options:
+    ignore_fields => ['prev','next']
 
-  $output = $fif->fill(scalarref => \$html,
-                       fobject => $q,
-                       disable_fields => [ 'uid', 'gid' ]);
+=head3 disable_fields => []
 
-Note that this module does not clear fields if you set the value to undef.
-It will clear fields if you set the value to an empty array or an empty string.  For example:
+To disable fields from being edited:
+
+    disable_fields => [ 'uid', 'gid' ]
+
+=head2 File Upload fields
+
+File upload fields cannot be supported directly. Workarounds include asking the
+user to re-attach any file uploads or fancy server-side storage and
+referencing. You are on your own.
+
+=head2 Clearing Fields
+
+Fields are cleared if you set their value to an empty string or empty arrayref but not undef:
 
   # this will leave the form element foo untouched
-  $output = $fif->fill(scalarref => \$html,
-             fdat => { foo => undef });
+  HTML::FillInForm->fill(\$html, { foo => undef });
 
   # this will set clear the form element foo
-  $output = $fif->fill(scalarref => \$html,
-             fdat => { foo => "" });
+  HTML::FillInForm->fill(\$html, { foo => "" });
 
-It has been suggested to add a option to the new constructer to change the behavior
-so that undef values will clear the form elements.  Patches welcome.
+It has been suggested to add a option to change the behavior so that undef
+values will clear the form elements.  Patches welcome.
 
-=back
+=head1 Old syntax
+
+You probably need to read no further. The remaining docs concern the
+1.x era syntax, which is still supported. 
+
+=head2 new
+
+Call C<new()> to create a new FillInForm object:
+
+  $fif = HTML::FillInForm->new;
+  $fif->fill(...);
+
+In theory, there is a slight performance benefit to calling C<new()> before C<fill()> if you make multiple 
+calls to C<fill()> before you destroy the object. Benchmark before optimizing. 
+
+=head2 fill ( old syntax ) 
+
+Instead of having your HTML and data types auto-detected, you can declare them explicitly in your
+call to C<fill()>:
+
+HTML source options:
+
+    arrayref  => @html
+    scalarref => $html
+    file      => \*HTML 
+    file      => 't.html'
+
+Fill Data options:
+
+    fobject   => $data_obj  # with param() method
+    fdat      => \%data
+
+Additional methods are also available:
+
+    fill_file(\*HTML,...);
+    fill_file('t.html',...);
+    fill_arrayref(\@html,...);
+    fill_scalarref(\$html,...);
 
 =head1 CALLING FROM OTHER MODULES
 
@@ -522,7 +612,7 @@ L<http://www.masonhq.com/?FAQ:HTTPAndHTML#h-how_can_i_populate_form_values_autom
 
 =head1 VERSION
 
-This documentation describes HTML::FillInForm module version 1.06.
+This documentation describes HTML::FillInForm module version 2.00
 
 =head1 SECURITY
 
@@ -567,38 +657,28 @@ redistribute it and/or modify it under the same terms as Perl itself.
 
 =head1 SEE ALSO
 
-L<HTML::Parser>, L<Data::FormValidator>, L<HTML::Template>, L<Apache::PageKit>
+L<HTML::Parser|HTML::Parser>, 
+L<Data::FormValidator|Data::FormValidato>, 
+L<HTML::Template|HTML::Template>, 
+L<Apache::PageKit|Apache::PageKit>
 
 =head1 CREDITS
 
 Fixes, Bug Reports, Docs have been generously provided by:
 
-  Tatsuhiko Miyagawa
-  Boris Zentner
-  Dave Rolsky
-  Patrick Michael Kane
-  Ade Olonoh
-  Tom Lancaster
-  Martin H Sluka
-  Mark Stosberg
-  Jonathan Swartz
-  Trevor Schellhorn
-  Jim Miner
-  Paul Lindner
-  Maurice Aubrey
-  Andrew Creer
-  Joseph Yanni
-  Philip Mak
-  Jost Krieger
-  Gabriel Burka
-  Bill Moseley
-  James Tolley
-  Dan Kubb
-  Alexander Hartmaier
-  Paul Miller
-  Anthony Ettinger
-  Simon P. Ditner
-  Michael Peters
-  Trevor Schellhorn
+  Tatsuhiko Miyagawa            Joseph Yanni
+  Boris Zentner                 Philip Mak
+  Dave Rolsky                   Jost Krieger
+  Patrick Michael Kane          Gabriel Burka
+  Ade Olonoh                    Bill Moseley
+  Tom Lancaster                 James Tolley
+  Martin H Sluka                Dan Kubb
+  Mark Stosberg                 Alexander Hartmaier
+  Jonathan Swartz               Paul Miller
+  Trevor Schellhorn             Anthony Ettinger
+  Jim Miner                     Simon P. Ditner
+  Paul Lindner                  Michael Peters
+  Maurice Aubrey                Trevor Schellhorn
+  Andrew Creer                
 
 Thanks!

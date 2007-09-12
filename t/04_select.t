@@ -36,9 +36,7 @@ my $q = new CGI( { foo1 => '0',
 	   foo3 => '' }
 	);
 
-my $fif = new HTML::FillInForm;
-my $output = $fif->fill(scalarref => \$hidden_form_in,
-                       fobject => $q);
+my $output = HTML::FillInForm->fill(\$hidden_form_in, $q);
 
 my $is_selected = join(" ",map { m/selected/ ? "yes" : "no" } grep /option/, split ("\n",$output));
 
@@ -75,7 +73,7 @@ $q = new CGI( { foo1 => 'bar1',
 	   foo3 => '' }
 	);
 
-$fif = new HTML::FillInForm;
+my $fif = new HTML::FillInForm;
 $output = $fif->fill(scalarref => \$hidden_form_in,
                        fobject => $q);
 

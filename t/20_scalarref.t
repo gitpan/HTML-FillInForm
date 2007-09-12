@@ -17,10 +17,7 @@ plan tests => (scalar @contents);
 
 # run each string through H::FIF
 foreach my $content (@contents) {
-    my $output = HTML::FillInForm->new->fill(
-        scalarref => \$content,
-        fdat      => {}
-    );
+    my $output = HTML::FillInForm->fill( \$content, fdat      => {});
 
     is($output, $content, q{output and content should be the same});
 }

@@ -17,7 +17,7 @@ sub new{
 ###
 #End of Support::Object
 
-use Test::More tests => 30;
+use Test::More tests => 38;
 
 use_ok('HTML::FillInForm');
 
@@ -38,9 +38,9 @@ my $result = HTML::FillInForm->new->fill_scalarref(
                                          ignore_fields => 'one',
                                          );
 
-ok($result =~ /not disturbed.+one/,'scalar value of ignore_fields');
-ok($result =~ /new val 2.+two/,'fill_scalarref worked');
-ok($result =~ /new val 3.+three/,'fill_scalarref worked 2');
+like($result, qr/not disturbed.+one/,'scalar value of ignore_fields');
+like($result, qr/new val 2.+two/,'fill_scalarref worked');
+like($result, qr/new val 3.+three/,'fill_scalarref worked 2');
 
 
 $html = qq[
@@ -52,30 +52,80 @@ $html = qq[
 
 my @html_array = split /\n/, $html;
 
-$result = HTML::FillInForm->new->fill_arrayref(
-                                         \@html_array,
-                                         fdat => {
-                                           one => "new val 1",
-                                           two => "new val 2",
-                                         },
-                                         );
 
-ok($result =~ /new val 1.+one/, 'fill_arrayref 1');
-ok($result =~ /new val 2.+two/, 'fill_arrayref 2');
+{ 
+    $result = HTML::FillInForm->new->fill_arrayref(
+                                             \@html_array,
+                                             fdat => {
+                                               one => "new val 1",
+                                               two => "new val 2",
+                                             },
+                                             );
 
+    like($result, qr/new val 1.+one/, 'fill_arrayref 1');
+    like($result, qr/new val 2.+two/, 'fill_arrayref 2');
+}
 
-$result = HTML::FillInForm->new->fill_file(
-                                         "t/data/form1.html",
-                                         fdat => {
-                                           one => "new val 1",
-                                           two => "new val 2",
-                                           three => "new val 3",
-                                         },
-                                         );
+{
+    $result = HTML::FillInForm->fill(
+        \@html_array,
+        {
+            one => "new val 1",
+            two => "new val 2",
+        },
+     );
 
-ok($result =~ /new val 1.+one/,'fill_file 1');
-ok($result =~ /new val 2.+two/,'fill_file 2');
-ok($result =~ /new val 3.+three/,'fill_file 3');
+    like($result, qr/new val 1.+one/, 'fill_arrayref 1');
+    like($result, qr/new val 2.+two/, 'fill_arrayref 2');
+}
+
+{
+
+    $result = HTML::FillInForm->new->fill_file(
+        "t/data/form1.html",
+        fdat => {
+            one => "new val 1",
+            two => "new val 2",
+            three => "new val 3",
+        },
+    );
+
+    like($result, qr/new val 1.+one/,'fill_file 1');
+    like($result, qr/new val 2.+two/,'fill_file 2');
+    like($result, qr/new val 3.+three/,'fill_file 3');
+}
+
+{
+    $result = HTML::FillInForm->fill(
+        "t/data/form1.html",
+        {
+            one => "new val 1",
+            two => "new val 2",
+            three => "new val 3",
+        },
+    );
+
+    like($result, qr/new val 1.+one/,'fill_file 1');
+    like($result, qr/new val 2.+two/,'fill_file 2');
+    like($result, qr/new val 3.+three/,'fill_file 3');
+}
+{
+    my $fh = open FH, "<t/data/form1.html" || die "can't open file: $!";
+
+    $result = HTML::FillInForm->fill(
+        \*FH,
+        {
+            one => "new val 1",
+            two => "new val 2",
+            three => "new val 3",
+        },
+    );
+
+    like($result, qr/new val 1.+one/,'fill_file 1');
+    like($result, qr/new val 2.+two/,'fill_file 2');
+    like($result, qr/new val 3.+three/,'fill_file 3');
+    close($fh);
+}
 
 
 
@@ -91,8 +141,6 @@ $result = HTML::FillInForm->new->fill_scalarref(
                                          \$html
                                          );
 };
-
-#ok($@ =~ 'HTML::FillInForm->fillInForm\(\) called without \'fobject\' or \'fdat\' parameter set', "no fdat or fobject parameters");
 
 $result = HTML::FillInForm->new->fill(
                                     fdat => {}
@@ -117,7 +165,7 @@ $result = HTML::FillInForm->new->fill_scalarref(
                                          );
 };
 
-ok($@ =~ 'HTML::FillInForm->fill called with fobject option, containing object of type Support::Object which lacks a param\(\) method!', "bad fobject parameter");
+like($@, qr/HTML::FillInForm->fill called with fobject option, containing object of type Support::Object which lacks a param\(\) method!/, "bad fobject parameter");
 
 
 $html = qq{<INPUT TYPE="radio" NAME="foo1">
@@ -129,7 +177,7 @@ my %fdat = (foo1 => 'bar2');
 $result = HTML::FillInForm->new->fill(scalarref => \$html,
                         fdat => \%fdat);
 
-ok($result =~ /on.+foo1/,'defaulting radio buttons to on');
+like($result, qr/on.+foo1/,'defaulting radio buttons to on');
 
 
 $html = qq{<INPUT TYPE="password" NAME="foo1">
@@ -140,7 +188,7 @@ $html = qq{<INPUT TYPE="password" NAME="foo1">
 $result = HTML::FillInForm->new->fill(scalarref => \$html,
                         fdat => \%fdat);
 
-ok($result =~ /bar2.+foo1/,'first array element taken for password fields');
+like($result, qr/bar2.+foo1/,'first array element taken for password fields');
 
 
 $html = qq{<INPUT TYPE="radio" NAME="foo1" value="bar2">
@@ -190,8 +238,8 @@ $result = HTML::FillInForm->new->fill(scalarref => \$html,
                         fdat => \%fdat);
 
 ok($result !~ m/checked/, "Empty radio button value");
-ok($result =~ m#<TEXTAREA NAME="foo2"></TEXTAREA>#, "Empty textarea");
-ok($result =~ m/<input( (type="password"|name="foo3"|value="")){3}>/, "Empty password field value");
+like($result, qr#<TEXTAREA NAME="foo2"></TEXTAREA>#, "Empty textarea");
+like($result, qr/<input( (type="password"|name="foo3"|value="")){3}>/, "Empty password field value");
 
 
 $html = qq[<div></div>
@@ -212,12 +260,12 @@ $html = qq[<div></div>
 $result = HTML::FillInForm->new->fill(scalarref => \$html,
                         fdat => \%fdat);
 
-ok($result =~ /bar1.+foo0/,'form with comments 1');
-ok($result =~ '<TEXTAREA NAME="foo1">bar2</TEXTAREA>','form with comments 2');
-ok($result =~ '<!--Comment 1-->','Comment 1');
-ok($result =~ '<!--Comment 2-->','Comment 2');
-ok($result =~ '<!--Comment\n\n3-->','Comment 3');
-ok($result =~ '<!--Comment 4-->','Comment 4');
+like($result, qr/bar1.+foo0/,'form with comments 1');
+like($result, qr'<TEXTAREA NAME="foo1">bar2</TEXTAREA>','form with comments 2');
+like($result, qr'<!--Comment 1-->','Comment 1');
+like($result, qr'<!--Comment 2-->','Comment 2');
+like($result, qr'<!--Comment\n\n3-->','Comment 3');
+like($result, qr'<!--Comment 4-->','Comment 4');
 
 $html = qq[<div></div>
 <? HTML processing instructions 1 ?>
@@ -236,10 +284,10 @@ $html = qq[<div></div>
 $result = HTML::FillInForm->new->fill(scalarref => \$html,
                         fdat => \%fdat);
 
-ok($result =~ /bar1.+foo0/,'form with processing 1');
-ok($result =~ '<TEXTAREA NAME="foo1">bar2</TEXTAREA>','form with processing 2');
-ok($result =~ '<\? HTML processing instructions 1 \?>','processing 1');
-ok($result =~ '<\? XML processing instructions 2\?>','processing 2');
-ok($result =~ '<\? HTML processing instructions\n\n3>','processing 3');
-ok($result =~ '<\?HTML processing instructions 4 >','processing 4');
+like($result, qr/bar1.+foo0/,'form with processing 1');
+like($result, qr'<TEXTAREA NAME="foo1">bar2</TEXTAREA>','form with processing 2');
+like($result, qr'<\? HTML processing instructions 1 \?>','processing 1');
+like($result, qr'<\? XML processing instructions 2\?>','processing 2');
+like($result, qr'<\? HTML processing instructions\n\n3>','processing 3');
+like($result, qr'<\?HTML processing instructions 4 >','processing 4');
 
