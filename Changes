@@ -1,3 +1,18 @@
+2.1 - August 29th, 2011
+
+Fixed disable_fields option (#52667 Dirk Braun, Goro Fuji)
+
+Add an option to clear absent checkboxes (#44101 Alex Kapranoff)
+
+Fix incorrectly multiple escaped data in list context (#34081 Miika Pekkarinen)
+
+Allow FIF to process the new <input> field  types (URL, email, and number) as defined in the HTML5 draft and already implemented by the iPhone.
+(Michael Fisher)
+
+Allow alternate parsing class (Mark Stosberg)
+
+mark invalid fields (Sam Tregar)
+
 2.0 - September 11th, 2007
 
 Allow passing an arrayref of hashrefs through fdat (Mark Stosberg, Michael Graham)

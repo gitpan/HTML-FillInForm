@@ -26,6 +26,6 @@ my $result = HTML::FillInForm->new->fill(
 					 ignore_fields => [qw(one two)],
 					 );
 
-ok($result =~ /not disturbed.+one/,'ignore 1');
-ok($result =~ /not disturbed.+two/,'ignore 2');
-ok($result =~ /new val 3.+three/,'ignore 3');
+ok($result =~ /not disturbed/ && $result =~ /\bone/,'ignore 1');
+ok($result =~ /not disturbed/ && $result =~ /\btwo/,'ignore 2');
+ok($result =~ /new val 3/ && $result =~ /\bthree/,'ignore 3');

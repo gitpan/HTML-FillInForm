@@ -38,9 +38,9 @@ my $result = HTML::FillInForm->new->fill_scalarref(
                                          ignore_fields => 'one',
                                          );
 
-like($result, qr/not disturbed.+one/,'scalar value of ignore_fields');
-like($result, qr/new val 2.+two/,'fill_scalarref worked');
-like($result, qr/new val 3.+three/,'fill_scalarref worked 2');
+ok($result =~ /not disturbed/ && $result =~/\bone/,'scalar value of ignore_fields');
+ok($result =~ /new val 2/ && $result =~ /two/,'fill_scalarref worked');
+ok($result =~ /new val 3/ && $result =~ /three/,'fill_scalarref worked 2');
 
 
 $html = qq[
@@ -62,8 +62,8 @@ my @html_array = split /\n/, $html;
                                              },
                                              );
 
-    like($result, qr/new val 1.+one/, 'fill_arrayref 1');
-    like($result, qr/new val 2.+two/, 'fill_arrayref 2');
+    ok($result =~ /new val 1/ && $result =~ /\bone/, 'fill_arrayref 1');
+    ok($result =~ /new val 2/ && $result =~ /\btwo/, 'fill_arrayref 2');
 }
 
 {
@@ -75,8 +75,8 @@ my @html_array = split /\n/, $html;
         },
      );
 
-    like($result, qr/new val 1.+one/, 'fill_arrayref 1');
-    like($result, qr/new val 2.+two/, 'fill_arrayref 2');
+    ok($result =~ /new val 1/ && $result =~ /\bone/, 'fill_arrayref 1');
+    ok($result =~ /new val 2/ && $result =~ /\btwo/, 'fill_arrayref 2');
 }
 
 {
@@ -90,9 +90,9 @@ my @html_array = split /\n/, $html;
         },
     );
 
-    like($result, qr/new val 1.+one/,'fill_file 1');
-    like($result, qr/new val 2.+two/,'fill_file 2');
-    like($result, qr/new val 3.+three/,'fill_file 3');
+    ok($result =~ /new val 1/ && $result =~ /\bone/,'fill_file 1');
+    ok($result =~ /new val 2/ && $result =~ /\btwo/,'fill_file 2');
+    ok($result =~ /new val 3/ && $result =~ /\bthree/,'fill_file 3');
 }
 
 {
@@ -105,9 +105,9 @@ my @html_array = split /\n/, $html;
         },
     );
 
-    like($result, qr/new val 1.+one/,'fill_file 1');
-    like($result, qr/new val 2.+two/,'fill_file 2');
-    like($result, qr/new val 3.+three/,'fill_file 3');
+    ok($result =~ /new val 1/ && $result =~ /\bone/,'fill_file 1');
+    ok($result =~ /new val 2/ && $result =~ /\btwo/,'fill_file 2');
+    ok($result =~ /new val 3/ && $result =~ /\bthree/,'fill_file 3');
 }
 {
     my $fh = open FH, "<t/data/form1.html" || die "can't open file: $!";
@@ -121,10 +121,10 @@ my @html_array = split /\n/, $html;
         },
     );
 
-    like($result, qr/new val 1.+one/,'fill_file 1');
-    like($result, qr/new val 2.+two/,'fill_file 2');
-    like($result, qr/new val 3.+three/,'fill_file 3');
-    close($fh);
+    ok($result =~ /new val 1/ && $result =~ /\bone/,'fill_file 1');
+    ok($result =~ /new val 2/ && $result =~ /\btwo/,'fill_file 2');
+    ok($result =~ /new val 3/ && $result =~ /\bthree/,'fill_file 3');
+    close(\*FH);
 }
 
 
@@ -177,7 +177,7 @@ my %fdat = (foo1 => 'bar2');
 $result = HTML::FillInForm->new->fill(scalarref => \$html,
                         fdat => \%fdat);
 
-like($result, qr/on.+foo1/,'defaulting radio buttons to on');
+ok($result =~ /on/ && $result =~ /\bfoo1/,'defaulting radio buttons to on');
 
 
 $html = qq{<INPUT TYPE="password" NAME="foo1">
@@ -188,7 +188,7 @@ $html = qq{<INPUT TYPE="password" NAME="foo1">
 $result = HTML::FillInForm->new->fill(scalarref => \$html,
                         fdat => \%fdat);
 
-like($result, qr/bar2.+foo1/,'first array element taken for password fields');
+ok($result =~ /bar2/ && $result =~ /\bfoo1/,'first array element taken for password fields');
 
 
 $html = qq{<INPUT TYPE="radio" NAME="foo1" value="bar2">
@@ -260,7 +260,7 @@ $html = qq[<div></div>
 $result = HTML::FillInForm->new->fill(scalarref => \$html,
                         fdat => \%fdat);
 
-like($result, qr/bar1.+foo0/,'form with comments 1');
+ok($result =~ /bar1/ and $result =~ /\bfoo0/,'form with comments 1');
 like($result, qr'<TEXTAREA NAME="foo1">bar2</TEXTAREA>','form with comments 2');
 like($result, qr'<!--Comment 1-->','Comment 1');
 like($result, qr'<!--Comment 2-->','Comment 2');
@@ -284,7 +284,7 @@ $html = qq[<div></div>
 $result = HTML::FillInForm->new->fill(scalarref => \$html,
                         fdat => \%fdat);
 
-like($result, qr/bar1.+foo0/,'form with processing 1');
+ok($result =~ /bar1/ && $result =~ /\bfoo0/,'form with processing 1');
 like($result, qr'<TEXTAREA NAME="foo1">bar2</TEXTAREA>','form with processing 2');
 like($result, qr'<\? HTML processing instructions 1 \?>','processing 1');
 like($result, qr'<\? XML processing instructions 2\?>','processing 2');

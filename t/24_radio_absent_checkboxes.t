@@ -21,9 +21,10 @@ my %fdat = (foo1 => 'bar2');
 
 my $fif = new HTML::FillInForm;
 my $output = $fif->fill(scalarref => \$hidden_form_in,
-			fdat => \%fdat);
+			fdat => \%fdat,
+                        clear_absent_checkboxes => 1);
 my $is_checked = join(" ",map { m/checked/ ? "yes" : "no" } split ("\n",$output));
-if ($is_checked eq 'no yes no no no yes'){
+if ($is_checked eq 'no yes no no no no'){
 	print "ok 2\n";
 } else {
 	print "Got unexpected is_checked:\n$is_checked\n";

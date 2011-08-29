@@ -5,23 +5,34 @@ use strict; # and no funny business, either.
 
 use Carp; # generate better errors with more context
 
-# required for attr_encoded
-use HTML::Parser 3.26;
 
 # required for UNIVERSAL->can
 require 5.005;
 
 use vars qw($VERSION @ISA);
-$VERSION = '2.00';
+$VERSION = '2.1';
 
-@ISA = qw(HTML::Parser);
 
 sub new {
-  my ($class) = @_;
+  my $class = shift;
   my $self = bless {}, $class;
-  $self->init;
+
+  # required for attr_encoded
+
+  my %arg = @_ || ();
+  my $parser_class = $arg{parser_class} || 'HTML::Parser';
+  eval "require $parser_class;" || die "require $parser_class failed: $@";
+  @ISA = ($parser_class);
+
+  $self->init(@_);
+
+  unless ($self->can('attr_encoded')) { 
+     die "attr_encoded method is missing. If are using HTML::Parser, you need at least version 3.26";
+  }
+
   # tell HTML::Parser not to decode attributes
   $self->attr_encoded(1);
+
   return $self;
 }
 
@@ -42,6 +53,8 @@ sub _known_keys {
         fill_password  =>  1,
         ignore_fields  =>  1,
         disable_fields =>  1,
+        invalid_fields =>  1,
+        invalid_class  =>  1,
     }
 }
 
@@ -128,6 +141,11 @@ sub fill {
     ? @{ $option{disable_fields} } : $option{disable_fields} if exists( $option{disable_fields} );
   $self->{disable_fields} = \%disable_fields;
 
+  my %invalid_fields;
+  %invalid_fields = map { $_ => 1 } ( ref $option{'invalid_fields'} eq 'ARRAY' )
+    ? @{ $option{invalid_fields} } : $option{invalid_fields} if exists( $option{invalid_fields} );
+  $self->{invalid_fields} = \%invalid_fields;
+
   if (my $fdat = $option{fdat}){
     # Copy the structure to prevent side-effects.
     my %copy;
@@ -158,11 +176,19 @@ sub fill {
     $self->{'target'} = $target;
   }
 
+  if (my $invalid_class = $option{invalid_class}){
+    $self->{'invalid_class'} = $invalid_class;
+  } else {
+    $self->{'invalid_class'} = 'invalid';
+  }
+
   if (defined($option{fill_password})){
     $self->{fill_password} = $option{fill_password};
   } else {
     $self->{fill_password} = 1;
   }
+
+  $self->{clear_absent_checkboxes} = $option{clear_absent_checkboxes};
 
   # make sure method has data to fill in HTML form with!
   unless(exists $self->{fdat} || $self->{objects}){
@@ -214,18 +240,37 @@ sub start {
     delete $self->{option_no_value};
   }
 
-  # Check if we need to disable  this field
-  $attr->{disable} = 1
+  # Check if we need to disable this field
+  $attr->{disabled} = 'disabled'
     if exists $attr->{'name'} and
     exists $self->{disable_fields}{ $attr->{'name'} } and
     $self->{disable_fields}{ $attr->{'name'} } and
-    not ( exists $attr->{disable} and $attr->{disable} );
+    not ( exists $attr->{disabled} and $attr->{disabled} );
+
+  # Check if we need to invalidate this field
+  my $invalidating = 0;
+  if (exists $attr->{name} and
+      exists $self->{invalid_fields}{ $attr->{name} } and
+      $self->{invalid_fields}{ $attr->{name} }) {
+      $invalidating = 1;
+      if (exists $attr->{class} and length $attr->{class}) {
+          # don't add the class if it's already there
+          unless ($attr->{class} =~ /\b\Q$self->{invalid_class}\E\b/) {
+              $attr->{class} .= " $self->{invalid_class}";
+          }
+      } else {
+          $attr->{class} = $self->{invalid_class};
+      }
+  }
+
   if ($tagname eq 'input'){
     my $value = exists $attr->{'name'} ? $self->_get_param($attr->{'name'}) : undef;
     # force hidden fields to have a value
     $value = '' if exists($attr->{'type'}) && $attr->{'type'} eq 'hidden' && ! exists $attr->{'value'} && ! defined $value;
+
+    # browsers do not pass unchecked checkboxes at all, so hack around
+    $value = '' if $self->{clear_absent_checkboxes} && !defined $value && exists($attr->{'type'}) && ($attr->{'type'} eq 'checkbox' || $attr->{'type'} eq 'radio');
     if (defined($value)){
-      $value = $self->escapeHTMLStringOrList($value);
       # check for input type, noting that default type is text
       if (!exists $attr->{'type'} ||
 	  $attr->{'type'} =~ /^(text|textfield|hidden|)$/i){
@@ -233,13 +278,13 @@ sub start {
 	  $value = shift @$value;
 	  $value = '' unless defined $value;
         }
-	$attr->{'value'} = $value;
+	$attr->{'value'} = __escapeHTML($value);
       } elsif (lc $attr->{'type'} eq 'password' && $self->{fill_password}) {
 	if ( ref($value) eq 'ARRAY' ) {
 	  $value = shift @$value;
 	  $value = '' unless defined $value;
         }
-	$attr->{'value'} = $value;
+	$attr->{'value'} = __escapeHTML($value);
       } elsif (lc $attr->{'type'} eq 'radio'){
 	if ( ref($value) eq 'ARRAY' ) {
 	  $value = $value->[0];
@@ -247,7 +292,7 @@ sub start {
         }
 	# value for radio boxes default to 'on', works with netscape
 	$attr->{'value'} = 'on' unless exists $attr->{'value'};
-	if ($attr->{'value'} eq $value){
+	if ($attr->{'value'} eq __escapeHTML($value)){
 	  $attr->{'checked'} = 'checked';
 	} else {
 	  delete $attr->{'checked'};
@@ -259,7 +304,7 @@ sub start {
 	delete $attr->{'checked'}; # Everything is unchecked to start
         $value = [ $value ] unless ref($value) eq 'ARRAY';
 	foreach my $v ( @$value ) {
-	  if ( $attr->{'value'} eq $v ) {
+	  if ( $attr->{'value'} eq __escapeHTML($v) ) {
 	    $attr->{'checked'} = 'checked';
 	  }
 	}
@@ -277,10 +322,14 @@ sub start {
     $self->{output} .= ">";
   } elsif ($tagname eq 'option'){
     my $value = $self->_get_param($self->{selectName});
+
+    # browsers do not pass selects with no selected options at all,
+    # so hack around
+    $value = '' if $self->{clear_absent_checkboxes} && !defined $value;
+
     $value = [ $value ] unless ( ref($value) eq 'ARRAY' );
 
     if ( defined $value->[0] ){
-      $value = $self->escapeHTMLStringOrList($value);
       delete $attr->{selected} if exists $attr->{selected};
       
       if(defined($attr->{'value'})){
@@ -289,14 +338,14 @@ sub start {
         if ($self->{selectMultiple}){
           # check if the option tag belongs to a multiple option select
 	  foreach my $v ( grep { defined } @$value ) {
-	    if ( $attr->{'value'} eq $v ){
+	    if ( $attr->{'value'} eq __escapeHTML($v) ){
 	      $attr->{selected} = 'selected';
 	    }
           }
         } else {
           # if not every value of a fdat ARRAY belongs to a different select tag
           if (not $self->{selectSelected}){
-	    if ( $attr->{'value'} eq $value->[0]){
+	    if ( $attr->{'value'} eq __escapeHTML($value->[0])){
 	      shift @$value if ref($value) eq 'ARRAY';
 	      $attr->{selected} = 'selected';
               $self->{selectSelected} = 1; # remeber that an option tag is selected for this select tag
@@ -306,7 +355,7 @@ sub start {
       } else {
         # option tag has no value attr - <OPTION>bar</OPTION>
 	# save for processing under text handler
-	$self->{option_no_value} = $value;
+	$self->{option_no_value} = __escapeHTML($value);
       }
     }
     $self->{output} .= "<$tagname";
@@ -318,16 +367,26 @@ sub start {
       $self->{output} .= ">";
     }
   } elsif ($tagname eq 'textarea'){
+    # need to re-output the <textarea> if we're marking it invalid
+    # (doesn't disable need this too?)
+    if ($invalidating) {
+        $self->{output} .= "<$tagname";
+        while (my ($key, $value) = each %$attr) {
+            $self->{output} .= sprintf qq( %s="%s"), $key, $value;
+        }
+        $self->{output} .= ">";
+    } else {
+        $self->{output} .= $origtext;
+    }
+
     if ($attr->{'name'} and defined (my $value = $self->_get_param($attr->{'name'}))){
-      $value = $self->escapeHTMLStringOrList($value);
       $value = (shift @$value || '') if ref($value) eq 'ARRAY';
       # <textarea> foobar </textarea> -> <textarea> $value </textarea>
       # we need to set outputText to 'no' so that 'foobar' won't be printed
       $self->{outputText} = 'no';
-      $self->{output} .= $origtext . $value;
-    } else {
-      $self->{output} .= $origtext;
+      $self->{output} .= __escapeHTML($value);
     }
+
   } elsif ($tagname eq 'select'){
     $self->{selectName} = $attr->{'name'};
     if (defined $attr->{'multiple'}){
@@ -336,7 +395,18 @@ sub start {
       $self->{selectMultiple} = 0;
       $self->{selectSelected} = 0; # helper var to remember if an option was already selected in the current select tag
     }
-    $self->{output} .= $origtext;
+
+    # need to re-output the <select> if we're marking it invalid
+    # (doesn't disable need this too?)
+    if ($invalidating) {
+        $self->{output} .= "<$tagname";
+        while (my ($key, $value) = each %$attr) {
+            $self->{output} .= sprintf qq( %s="%s"), $key, $value;
+        }
+        $self->{output} .= ">";
+    } else {
+        $self->{output} .= $origtext;
+    }
   } else {
     $self->{output} .= $origtext;
   }
@@ -406,21 +476,8 @@ sub end {
   $self->{output} .= $origtext;
 }
 
-sub escapeHTMLStringOrList {
-  my ($self, $toencode) = @_;
-
-  if (ref($toencode) eq 'ARRAY') {
-    foreach my $elem (@$toencode) {
-      $elem = $self->escapeHTML($elem);
-    }
-    return $toencode;
-  } else {
-    return $self->escapeHTML($toencode);
-  }
-}
-
-sub escapeHTML {
-  my ($self, $toencode) = @_;
+sub __escapeHTML {
+  my ($toencode) = @_;
 
   return undef unless defined($toencode);
   $toencode =~ s/&/&amp;/g;
@@ -530,6 +587,30 @@ To disable fields from being edited:
 
     disable_fields => [ 'uid', 'gid' ]
 
+=head3 invalid_fields => []
+
+To mark fields as being invalid (CSS class set to "invalid" or
+whatever you set invalid_class to):
+
+    invalid_fields => [ 'uid', 'gid' ]
+
+=head3 invalid_class => "invalid"
+
+The CSS class which will be used to mark fields invalid.  Defaults to
+"invalid".
+
+=head3 clear_absent_checkboxes => 0
+
+Absent fields are not cleared or in any way changed. This is
+not what you want when you deal with checkboxes which are not sent
+by browser at all when cleared by user.
+
+To remove "checked" attribute from checkboxes and radio buttons and
+attribute "selected" from options of select lists for which there's no
+data:
+
+    clear_absent_checkboxes => 1
+
 =head2 File Upload fields
 
 File upload fields cannot be supported directly. Workarounds include asking the
@@ -548,6 +629,15 @@ Fields are cleared if you set their value to an empty string or empty arrayref b
 
 It has been suggested to add a option to change the behavior so that undef
 values will clear the form elements.  Patches welcome.
+
+You can also use C<clear_absent_checkboxes> option to clear
+checkboxes, radio buttons and selects without corresponding keys in
+the data:
+
+    # this will set clear the form element foo (and all others except
+    # bar)
+    HTML::FillInForm->fill(\$html, { bar => 123 },
+        clear_absent_checkboxes => 1);
 
 =head1 Old syntax
 
@@ -588,6 +678,15 @@ Additional methods are also available:
     fill_arrayref(\@html,...);
     fill_scalarref(\$html,...);
 
+=head1 USING AN ALTERNATE PARSER
+
+It's possible to use an alternate parser to L<HTML::Parser> if the alternate
+provides a sufficiently compatible interface. For example, when a Pure Perl
+implementation of HTML::Parser appears, it could be used for portability. The syntax
+is simply to provide a C<parser_class> to new();
+
+   HTML::FillInForm->new( parser_class => 'MyAlternate::Parser' ); 
+
 =head1 CALLING FROM OTHER MODULES
 
 =head2 Apache::PageKit
@@ -612,7 +711,7 @@ L<http://www.masonhq.com/?FAQ:HTTPAndHTML#h-how_can_i_populate_form_values_autom
 
 =head1 VERSION
 
-This documentation describes HTML::FillInForm module version 2.00
+This documentation describes HTML::FillInForm module version 2.1
 
 =head1 SECURITY
 
@@ -650,7 +749,7 @@ L<http://www.perlmonks.org/index.pl?node_id=274534>
 
 =head1 AUTHOR
 
-(c) 2005 TJ Mather, tjmather@maxmind.com, L<http://www.maxmind.com/>
+(c) 2011 TJ Mather, tjmather@maxmind.com, L<http://www.maxmind.com/>
 
 All rights reserved. This package is free software; you can
 redistribute it and/or modify it under the same terms as Perl itself.
@@ -666,6 +765,8 @@ L<Apache::PageKit|Apache::PageKit>
 
 Fixes, Bug Reports, Docs have been generously provided by:
 
+  Alex Kapranoff                Miika Pekkarinen
+  Michael Fisher                Sam Tregar
   Tatsuhiko Miyagawa            Joseph Yanni
   Boris Zentner                 Philip Mak
   Dave Rolsky                   Jost Krieger

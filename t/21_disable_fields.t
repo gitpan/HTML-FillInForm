@@ -24,8 +24,8 @@ my $result = HTML::FillInForm->new->fill(
 					 disable_fields => [qw(two)],
 					 );
 
-ok($result =~ /not disturbed.+one/,'don\'t disable 1');
-ok($result =~ /new val 2.+two.+disable="1"/,'disable 2');
+ok($result =~ /not disturbed/ && $result =~ /\bone/,'don\'t disable 1');
+ok($result =~ /new val 2/ && $result =~ /\btwo/ && $result =~ /disabled="disabled"/,'disable 2');
 $result = HTML::FillInForm->new->fill(
 					 scalarref => \$html,
 					 fdat => {
@@ -34,5 +34,5 @@ $result = HTML::FillInForm->new->fill(
 					 disable_fields => 'two',
 					 );
 
-ok($result =~ /not disturbed.+one/,'don\'t disable 1');
-ok($result =~ /new val 2.+two.+disable="1"/,'disable 2');
+ok($result =~ /not disturbed/ && $result =~ /\bone/,'don\'t disable 1');
+ok($result =~ /new val 2/ && $result =~ /\btwo/ && $result =~ /disabled="disabled"/,'disable 2');

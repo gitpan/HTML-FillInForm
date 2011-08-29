@@ -1,6 +1,7 @@
 Changes
 MANIFEST
 Makefile.PL
+META.yml			Module meta-data (added by MakeMaker)
 README
 lib/HTML/FillInForm.pm
 t/00_base.t
@@ -26,5 +27,8 @@ t/19_extra.t
 t/20_scalarref.t
 t/21_disable_fields.t
 t/22_undef.t
+t/23_absent_checkbox.t
+t/24_radio_absent_checkboxes.t
+t/25_select_absent_checkboxes.t
+t/26_invalid_fields.t
 t/data/form1.html
-META.yml                                 Module meta-data (added by MakeMaker)
