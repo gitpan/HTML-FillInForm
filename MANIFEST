@@ -32,4 +32,3 @@ t/24_radio_absent_checkboxes.t
 t/25_select_absent_checkboxes.t
 t/26_invalid_fields.t
 t/data/form1.html
-META.json                                Module JSON meta-data (added by MakeMaker)

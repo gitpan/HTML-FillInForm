@@ -10,7 +10,7 @@ use Carp; # generate better errors with more context
 require 5.005;
 
 use vars qw($VERSION @ISA);
-$VERSION = '2.11';
+$VERSION = '2.20';
 
 
 sub new {
@@ -273,7 +273,7 @@ sub start {
     if (defined($value)){
       # check for input type, noting that default type is text
       if (!exists $attr->{'type'} ||
-	  $attr->{'type'} =~ /^(text|textfield|hidden|)$/i){
+	  $attr->{'type'} =~ /^(text|textfield|hidden|tel|search|url|email|datetime|date|month|week|time|datetime\-local|number|range|color|)$/i){
 	if ( ref($value) eq 'ARRAY' ) {
 	  $value = shift @$value;
 	  $value = '' unless defined $value;
